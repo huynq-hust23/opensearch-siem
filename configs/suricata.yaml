@@ -681,9 +681,9 @@ af-packet:
   #   defrag: yes
 
   # Loopback interface for localhost/Docker traffic
-  - interface: lo
-    cluster-id: 97
-    cluster-type: cluster_flow
+  #- interface: lo
+  #  cluster-id: 97
+  #  cluster-type: cluster_flow
 
   # Docker Bridge: Attacker Network (attacker-net)
   - interface: br-attacker-net
