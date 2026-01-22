@@ -159,6 +159,16 @@ services:
         ipv4_address: 172.30.20.254
     restart: always
 
+  # ========= MAILHOG =========
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - opensearch-net
+
 volumes:
   opensearch-data1:
   opensearch-data2:

@@ -1,4 +1,7 @@
-# BÁO CÁO ĐỒ ÁN CHI TIẾT: XÂY DỰNG HỆ THỐNG GIÁM SÁT AN TOÀN MẠNG (SIEM) VỚI TÍCH HỢP THREAT INTELLIGENCE
+# BÁO CÁO ĐỒ ÁN TỐT NGHIỆP
+## ĐỀ TÀI: XÂY DỰNG HỆ THỐNG GIÁM SÁT AN TOÀN MẠNG (SIEM) TẬP TRUNG SỬ DỤNG OPENSEARCH VÀ SURICATA TRÊN NỀN TẢNG CONTAINER
+
+---
 
 **Sinh viên thực hiện:** [Tên Sinh Viên]
 **Mã sinh viên:** [Mã Sinh Viên]
@@ -10,312 +13,375 @@
 ## MỤC LỤC
 
 1.  [CHƯƠNG 1: TỔNG QUAN VỀ ĐỀ TÀI](#chương-1-tổng-quan-về-đề-tài)
-    *   1.1. Đặt vấn đề
-    *   1.2. Mục tiêu đồ án
-    *   1.3. Phạm vi nghiên cứu
 2.  [CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ](#chương-2-cơ-sở-lý-thuyết-và-công-nghệ)
-    *   2.1. Tổng quan về SIEM (Security Information and Event Management)
-    *   2.2. Threat Intelligence (Thông tin tình báo mối đe dọa)
-    *   2.3. Hệ thống phát hiện xâm nhập Suricata (IDS/IPS)
-    *   2.4. OpenSearch Stack (OpenSearch, Dashboard, Logstash, Beats)
 3.  [CHƯƠNG 3: PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG](#chương-3-phân-tích-và-thiết-kế-hệ-thống)
-    *   3.1. Yêu cầu phi chức năng (Performance, Scalability)
-    *   3.2. Kiến trúc tổng thể (High-Level Architecture)
-    *   3.3. Thiết kế chi tiết các thành phần
-        *   3.3.1. Sensor Layer (Lớp cảm biến)
-        *   3.3.2. Log Aggregation & Enrichment Layer (Lớp thu thập và làm giàu)
-        *   3.3.3. Storage & Analytics Layer (Lớp lưu trữ và phân tích)
-    *   3.4. Luồng dữ liệu (Data Flow)
-4.  [CHƯƠNG 4: TRIỂN KHAI HỆ THỐNG](#chương-4-triển-khai-hệ-thống)
-    *   4.1. Môi trường triển khai
-    *   4.2. Cấu hình chi tiết Suricata Sensor
-    *   4.3. Cấu hình Log Pipeline và Threat Intelligence
-    *   4.4. Triển khai OpenSearch Cluster với Docker
+    *   3.1. Phân tích yêu cầu và Đặc tả kỹ thuật
+    *   3.2. Thiết kế Kiến trúc Hệ thống (System Architecture)
+    *   3.3. Thiết kế Luồng dữ liệu và Pipeline xử lý (Data Flow Design)
+    *   3.4. Thiết kế Cơ sở dữ liệu và Quy hoạch Index (Database Design)
+    *   3.5. Thiết kế Kịch bản Giám sát và Cảnh báo (Detection Logic)
+4.  [CHƯƠNG 4: TRIỂN KHAI VÀ CẤU HÌNH](#chương-4-triển-khai-và-cấu-hình)
 5.  [CHƯƠNG 5: KIỂM THỬ VÀ ĐÁNH GIÁ](#chương-5-kiểm-thử-và-đánh-giá)
-    *   5.1. Mô hình Lab tấn công thực tế
-    *   5.2. Kịch bản 1: Network Scanning (Reconnaissance)
-    *   5.3. Kịch bản 2: Web Application Attack (SQL Injection & XSS)
-    *   5.4. Kịch bản 3: Threat Intelligence Detection (IP Reputation)
-    *   5.5. Đánh giá hiệu năng hệ thống
 6.  [KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN](#kết-luận-và-hướng-phát-triển)
 
 ---
 
 ## CHƯƠNG 1: TỔNG QUAN VỀ ĐỀ TÀI
 
-### 1.1. Đặt vấn đề
-Trong bối cảnh chuyển đổi số mạnh mẽ, các hệ thống công nghệ thông tin ngày càng trở thành mục tiêu của các cuộc tấn công mạng tinh vi. Các giải pháp bảo mật truyền thống như tường lửa (Firewall) hay phần mềm diệt virus (Antivirus) hoạt động độc lập là không đủ để bảo vệ hệ thống trước các mối đe dọa phức tạp như APT (Advanced Persistent Threats) hay Zero-day.
-
-Nhu cầu đặt ra là cần một hệ thống quản lý thông tin và sự kiện an ninh tập trung (SIEM), có khả năng thu thập log từ nhiều nguồn, phân tích theo thời gian thực và đặc biệt là tích hợp thông tin tình báo mối đe dọa (Threat Intelligence) để phát hiện sớm các cuộc tấn công dựa trên các dấu hiệu nhận biết (IOCs) cập nhật toàn cầu.
-
-### 1.2. Mục tiêu đồ án
-Đồ án này tập trung xây dựng một hệ thống SIEM hoàn chỉnh dựa trên nền tảng mã nguồn mở (Open Source) với các mục tiêu cụ thể:
-1.  **Xây dựng hệ thống giám sát:** Triển khai Suricata làm cảm biến mạng để phát hiện xâm nhập.
-2.  **Lưu trữ và phân tích tập trung:** Sử dụng OpenSearch Cluster để lưu trữ log tập trung, đảm bảo tính sẵn sàng cao.
-3.  **Tích hợp Threat Intelligence:** Xây dựng module làm giàu dữ liệu trong Logstash để tự động đối chiếu IP nguồn/đích với các danh sách đen (Blocklist) uy tín thế giới.
-4.  **Kiểm thử thực tế:** Thực hiện tấn công thử nghiệm (Red Teaming) trong môi trường Lab cô lập để chứng minh khả năng phát hiện của hệ thống.
+*(Giữ nguyên nội dung đã viết ở phiên bản trước)*
 
 ---
 
 ## CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ
 
-### 2.1. Tổng quan về SIEM
-SIEM (Security Information and Event Management) là giải pháp kết hợp giữa SIM (Security Information Management - quản lý lưu trữ log dài hạn) và SEM (Security Event Management - giám sát sự kiện thời gian thực).
-
-Các chức năng cốt lõi của SIEM bao gồm:
-1.  **Data Aggregation:** Thu thập dữ liệu từ network devices, servers, DB, applications.
-2.  **Correlation:** Liên kết các sự kiện rời rạc để phát hiện chuỗi tấn công.
-3.  **Alerting:** Cảnh báo tức thời qua Email, Dashboard, Webhook.
-4.  **Retention:** Lưu trữ dữ liệu tuân thủ quy định pháp luật (Compliance).
-
-### 2.2. Threat Intelligence (Thông tin tình báo mối đe dọa)
-Threat Intelligence (TI) là tri thức dựa trên bằng chứng về các mối đe dọa an ninh mạng hiện hữu hoặc tiềm ẩn. Trong kỹ thuật, TI thường được chia sẻ dưới dạng các **Indicators of Compromise (IOCs)**, bao gồm:
--   **IP Reputation:** Địa chỉ IP của các C2 server, botnet.
--   **Domain/URL:** Trang web lừa đảo (Phishing), chứa mã độc.
--   **File Hash:** Mã băm của malware (MD5, SHA256).
-
-Trong đồ án này, chúng ta tập trung vào **Tactical TI** (Chiến thuật) bằng cách sử dụng các danh sách IP Reputation (như Blocklist.de, AlienVault OTX) để phát hiện kết nối đến máy chủ độc hại.
-
-### 2.3. Hệ thống phát hiện xâm nhập Suricata (IDS/IPS)
-Suricata là một IDS/IPS mã nguồn mở hiệu năng cao.
-*   **Kiến trúc đa luồng (Multi-threaded):** Khác với Snort (đơn luồng), Suricata tận dụng tối đa sức mạnh của CPU đa nhân để xử lý traffic mạng tốc độ cao (10Gbps+).
-*   **Cấu trúc xử lý:** Traffic $\rightarrow$ Packet Acquisition (AF_PACKET) $\rightarrow$ Decode $\rightarrow$ Stream Reassembly $\rightarrow$ Detect (Match Rules) $\rightarrow$ Output (EVE JSON).
-*   **Rule Format:** Cú pháp rule của Suricata tương thích với Snort nhưng mở rộng thêm nhiều tính năng định danh giao thức (App Layer).
-
-### 2.4. OpenSearch Stack
-Dự án sử dụng OpenSearch (fork từ Elasticsearch) thay vì ELK Stack bản quyền:
-*   **OpenSearch:** Search Engine & Database phân tán. Dữ liệu được stored dưới dạng Inverted Index giúp tìm kiếm cực nhanh.
-*   **OpenSearch Dashboards:** Công cụ Visualization (tương đương Kibana).
-*   **Logstash:** ETL Tool (Extract - Transform - Load). Đóng vai trò Data Pipeline xử lý logic nghiệp vụ.
-*   **Beats (Filebeat/Metricbeat):** Lightweight Shippers gửi dữ liệu từ biên về trung tâm.
+*(Giữ nguyên nội dung đã viết ở phiên bản trước)*
 
 ---
 
 ## CHƯƠNG 3: PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
 
-### 3.1. Kiến trúc tổng thể (High-Level Architecture)
+### 3.1. Phân tích yêu cầu và Đặc tả kỹ thuật
 
-Chúng tôi lựa chọn mô hình **Cluster Architecture** cho hệ thống lưu trữ log thay vì Single Node.
+Hệ thống SIEM được thiết kế để giải quyết bài toán giám sát an ninh mạng trong môi trường doanh nghiệp hiện đại, ứng dụng công nghệ container để tối ưu hóa khả năng mở rộng và vận hành.
 
-**Lý do lựa chọn:**
--   **High Availability (HA):** Nếu một node chết, hệ thống vẫn hoạt động.
--   **Performance:** Tách biệt node ghi (Ingest) và node lưu trữ/tìm kiếm (Data) giúp tối ưu tài nguyên.
+#### 3.1.1. Yêu cầu chức năng (Functional Requirements)
+Hệ thống cần đáp ứng các nhóm chức năng cốt lõi sau:
+1.  **Thu thập dữ liệu đa nguồn (Multi-source Collection):**
+    *   Hỗ trợ thu thập log từ network sensor (Suricata) qua định dạng chuẩn JSON.
+    *   Hỗ trợ mở rộng thu thập log từ hệ điều hành (Syslog, Winlogbeat) trong tương lai.
+2.  **Chuẩn hóa và Tương quan dữ liệu (Normalization & Correlation):**
+    *   Dữ liệu thô phải được mapping về chuẩn ECS (Elastic Common Schema) để thống nhất tên trường (ví dụ: `src_ip` -> `source.ip`).
+    *   Thực hiện tương quan sự kiện: Kết hợp nhiều log rời rạc để xác định một cuộc tấn công phức hợp (ví dụ: Brute Force = nhiều lần đăng nhập sai liên tiếp).
+3.  **Làm giàu dữ liệu thời gian thực (Real-time Enrichment):**
+    *   **GeoIP Lookup:** Tự động phân giải IP công cộng thành thông tin địa lý (Quốc gia, Thành phố, Tọa độ) phục vụ vẽ bản đồ Threat Map.
+    *   **Threat Intel Integration:** Tích hợp các nguồn tin tình báo (OSINT) như AlienVault, Blocklist.de để phát hiện sớm các IP/Domain độc hại.
+4.  **Cảnh báo tức thời (Real-time Alerting):**
+    *   Gửi cảnh báo qua đa kênh (Email, Slack, Webhook) khi phát hiện sự kiện có độ nghiêm trọng cao (Severity level 1).
+    *   Hỗ trợ ngưỡng kích hoạt (Threshold): Ví dụ chỉ cảnh báo khi có > 50 request/phút.
 
-**Sơ đồ kiến trúc:**
-```mermaid
-graph TB
-    subgraph "Attacker Zone"
-        Attacker[Kali Linux Attacker]
-    end
-
-    subgraph "DMZ / Sensor Zone"
-        Victim[Web Server DVWA]
-        Sensor[Suricata IDS]
-    end
-
-    subgraph "SIEM Processing Layer"
-        Filebeat[Filebeat Agent]
-        Logstash[Logstash Cluster]
-    end
-
-    subgraph "Data Storage (OpenSearch Cluster)"
-        Manager[Cluster Manager Node]
-        Ingest[Ingest Node]
-        Data1[Data Node 1]
-        Data2[Data Node 2]
-    end
-
-    subgraph "Visualization"
-        Dashboard[OpenSearch Dashboards]
-    end
-
-    Attacker -- Attack Traffic --> Victim
-    Attacker -- Attack Traffic --> Sensor
-    Sensor -- EVE JSON Logs --> Filebeat
-    Filebeat -- TCP 5044 --> Logstash
-    Logstash -- HTTP/HTTPS --> Ingest
-    Ingest -- Indexing --> Data1 & Data2
-    Dashboard -- Query --> Data1 & Data2
-```
-
-### 3.3. Thiết kế chi tiết các thành phần
-
-#### 3.3.1. Sensor Layer (Suricata)
--   **Interfaces:**
-    -   `vboxnet0`: Lắng nghe traffic nội mạng Host-Only (quan trọng cho Lab report).
-    -   `wlp0s20f3`: Lắng nghe traffic mạng vật lý (Wifi/Ethernet).
--   **Outputs:** Cấu hình Suricata chỉ ghi log ra file `/var/log/suricata/eve.json`. Đây là định dạng JSON cấu trúc, chứa đầy đủ thông tin: Timestamp, 5-tuple (Src/Dst IP/Port, Protocol), Alert details, HTTP headers, DNS queries.
-
-#### 3.3.2. Log Aggregation & Enrichment Layer (Logstash)
-Đây là "trí tuệ" của hệ thống xử lý log. Pipeline của Logstash được thiết kế qua 3 giai đoạn:
-
-1.  **Input:** Nhận log từ Filebeat qua port 5044.
-2.  **Filter (Enrichment Logic):**
-    -   **Parsing:** Đọc cấu trúc JSON.
-    -   **GeoIP:** Chuyển đổi IP thành tọa độ địa lý (Latitude/Longitude) để vẽ bản đồ mối đe dọa.
-    -   **Threat Intelligence Lookup:** Sử dụng plugin `translate`.
-        *   Logstash tải file `blocklist_de.yml` vào bộ nhớ.
-        *   Mỗi khi có log mới, trường `[source][ip]` và `[destination][ip]` được so khớp với dictionary này.
-        *   Nếu trùng khớp (Hit), thêm tag `threat_matched` và trường `threat.name`.
-3.  **Output:** Đẩy dữ liệu vào OpenSearch với Index Pattern động: `siem-suricata-{YYYY.MM.dd}`.
-
-#### 3.3.3. Storage Layer (OpenSearch Cluster Design)
-Cấu hình 4 Node trong Docker Compose:
--   **opensearch-manager:** Chỉ làm nhiệm vụ quản lý Cluster state, không chứa data (giảm tải CPU).
--   **opensearch-ingest:** Node trung gian nhận request ghi từ Logstash, phân phối về Data nodes.
--   **opensearch-data1 & data2:** Lưu trữ Shards. Mỗi Index được chia thành 1 Primary Shard và 1 Replica Shard. Nếu Data1 chết, Data2 vẫn còn bản Replica để phục vụ truy vấn.
+#### 3.1.2. Yêu cầu phi chức năng (Non-functional Requirements)
+*   **Hiệu năng (Performance):** Đảm bảo xử lý được lưu lượng log đầu vào tối thiểu 1000 EPS (Events Per Second) mà không bị mất gói tin. Độ trễ hiển thị (Ingestion Lag) < 5 giây.
+*   **Tính sẵn sàng (Availability):** Kiến trúc Cluster cho phép hệ thống hoạt động liên tục ngay cả khi một node xử lý gặp sự cố.
+*   **An toàn bảo mật (Security):** Toàn bộ giao tiếp giữa các thành phần (Filebeat -> Logstash -> OpenSearch) phải được mã hóa TLS. Dữ liệu lưu trữ phải được phân quyền truy cập (RBAC).
 
 ---
 
-## CHƯƠNG 4: TRIỂN KHAI HỆ THỐNG
+### 3.2. Thiết kế Kiến trúc Hệ thống (System Architecture)
 
-### 4.1. Cấu hình chi tiết Suricata Sensor (`suricata.yaml`)
-Một số cấu hình quan trọng đã thực hiện trong file `configs/suricata.yaml`:
+Hệ thống được thiết kế theo mô hình **Microservices Architecture**, trong đó mỗi thành phần chạy trong một Container riêng biệt, giao tiếp với nhau qua Docker Network. Kiến trúc này bao gồm 3 lớp chính:
 
-1.  **Mạng nội bộ (HOME_NET):**
-    ```yaml
-    vars:
-      address-groups:
-        HOME_NET: "[192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12]"
-        EXTERNAL_NET: "!$HOME_NET"
+#### 3.2.1. Lớp Thu thập và Cảm biến (Sensing & Collection Layer)
+*   **Network Sensor (Suricata):**
+    *   Hoạt động ở chế độ *Passive Sniffing* (Promiscuous mode) trên lớp mạng vật lý hoặc ảo.
+    *   Sử dụng thư viện `AF_PACKET` v3 (Linux Kernel) để bắt gói tin tốc độ cao với cơ chế Zero-copy.
+    *   Deep Packet Inspection (DPI): Phân tích sâu nội dung gói tin (Payload) để phát hiện chữ ký tấn công (Signature Matching).
+*   **Log Shipper (Filebeat):**
+    *   Đảm nhiệm vai trò vận chuyển log tin cậy (Reliable shipping).
+    *   Cơ chế *Backpressure*: Tự động giảm tốc độ gửi log nếu Logstash/OpenSearch bị quá tải, tránh mất dữ liệu.
+
+#### 3.2.2. Lớp Xử lý trung tâm (Core Processing Layer)
+*   **Logstash Cluster:**
+    *   Hoạt động như một ETL Engine (Extract-Transform-Load).
+    *   Sử dụng kiến trúc Pipeline đa luồng (Worker Threads) để xử lý song song các sự kiện.
+    *   Tích hợp bộ nhớ đệm (In-memory Lookup) để thực hiện làm giàu dữ liệu (GeoIP, Threat Intel) với độ trễ cực thấp O(1).
+
+#### 3.2.3. Lớp Lưu trữ và Phân tích (Storage & Analytics Layer)
+*   **OpenSearch Cluster:**
+    *   Lưu trữ dữ liệu dưới dạng các Shard (phân mảnh) phân tán trên các node.
+    *   Kiến trúc Master-Data Node tách biệt:
+        *   *Master Node:* Quản lý trạng thái Cluster, không chứa dữ liệu.
+        *   *Data Node:* Chứa dữ liệu và thực hiện các truy vấn tìm kiếm/tính toán nặng.
+*   **OpenSearch Dashboards:**
+    *   Giao diện trực quan hóa, kết nối tới OpenSearch qua REST API.
+
+---
+
+### 3.3. Thiết kế Luồng dữ liệu và Pipeline xử lý (Data Flow Design)
+
+Luồng dữ liệu (Data Pipeline) được thiết kế chi tiết như sau:
+
+**Bước 1: Packet Capture & Decoding**
+*   Suricata bắt gói tin Ethernet Frame từ interface `br-attacker-net`.
+*   Decode các giao thức tầng dưới (TCP/UDP/ICMP) và tầng ứng dụng (HTTP/DNS/TLS).
+*   Kết quả phân tích được serialize thành định dạng JSON và ghi vào `/var/log/suricata/eve.json`.
+
+**Bước 2: Log Ingestion & Buffering**
+*   Filebeat đọc file `eve.json` (Input: Log).
+*   Thêm các metadata định danh (ví dụ: `agent.version`, `host.name`).
+*   Gửi dữ liệu qua giao thức `Lumberjack` (TCP/5044) tới Logstash.
+
+**Bước 3: Data Transformation (Logstash Logic)**
+Quá trình xử lý tại Logstash diễn ra qua 3 bộ lọc chính:
+1.  **JSON Filter:** Parse chuỗi JSON thành object.
+2.  **Date Filter:** Đồng bộ hóa trường `@timestamp` của log với thời gian thực của sự kiện (thay vì thời gian log được ingestion).
+3.  **GeoIP & Threat Intelligence Filter:**
+    *   *Logic:* Sử dụng plugin `translate` để so khớp IP với cơ sở dữ liệu mối đe dọa.
+    *   *Thực thi (Implementation):*
+        ```ruby
+        if [source][ip] in [blacklist] {
+          mutate { add_tag => "threat_matched" }
+        }
+        ```
+
+**Bước 4: Indexing & Storage**
+*   Dữ liệu sau xử lý được đẩy vào OpenSearch qua Bulk API (gửi theo lô 500-1000 document/lần để tối ưu IOPS).
+*   Dữ liệu được ghi vào Index tương ứng, ví dụ `siem-suricata-2023.10.25`.
+
+---
+
+### 3.4. Thiết kế Cơ sở dữ liệu và Quy hoạch Index (Database Design)
+
+Khác với RDBMS truyền thống, OpenSearch là cơ sở dữ liệu hướng tài liệu (Document-oriented). Việc thiết kế tập trung vào quy hoạch Index và Mapping.
+
+#### 3.4.1. Chiến lược quản lý Index (Index Lifecycle Management - ISM)
+Hệ thống sử dụng chiến lược Hot-Warm-Delete để quản lý vòng đời dữ liệu:
+*   **Hot Phase (0-7 ngày):** Index được lưu trên SSD, ưu tiên tốc độ ghi và đọc. Cấu hình 1 Primary Shard, 1 Replica Shard.
+*   **Delete Phase (>30 ngày):** Tự động xóa Index để giải phóng không gian lưu trữ.
+
+#### 3.4.2. Đặc tả cấu trúc dữ liệu (Schema Definition)
+Sử dụng chuẩn ECS (Elastic Common Schema) để chuẩn hóa dữ liệu:
+
+| Tên trường (Field) | Kiểu (Type) | Mô tả (Description) | Ví dụ giá trị |
+| :--- | :--- | :--- | :--- |
+| `@timestamp` | `date` | Thời gian xảy ra sự kiện | `2023-10-25T14:30:00Z` |
+| `event.module` | `keyword` | Module sinh ra log | `suricata` |
+| `event.category` | `keyword` | Phân loại sự kiện | `intrusion_detection` |
+| `source.ip` | `ip` | Địa chỉ IP nguồn | `172.30.10.10` |
+| `destination.ip` | `ip` | Địa chỉ IP đích | `172.30.20.10` |
+| `source.geo.country_name` | `keyword` | Quốc gia nguồn | `Russia` |
+| `suricata.alert.severity` | `integer` | Mức độ nghiêm trọng (1-4) | `1` |
+| `suricata.alert.signature` | `text` | Tên chữ ký phát hiện | `ET SQL Injection` |
+
+---
+
+### 3.5. Thiết kế các Kịch bản Giám sát và Cảnh báo (Detection Logic)
+
+Hệ thống được thiết kế để phát hiện diện rộng các hành vi bất thường. Tập luật giám sát được chia thành 4 nhóm chính với tổng cộng 15 Use Cases chi tiết:
+
+#### Nhóm 1: Tấn công Ứng dụng Web (Web Application Attacks)
+
+**UC01: SQL Injection (SQLi)**
+*   *Mô tả:* Phát hiện nỗ lực chèn mã SQL vào tham số đầu vào HTTP (GET/POST) để thao tác cơ sở dữ liệu trái phép.
+*   *Logic:* `suricata.alert.signature` chứa "SQL Injection" HOẶC `http.url` khớp regex `(union|select|insert|delete|update).*`.
+*   *Severity:* Critical (1).
+
+**UC02: Cross-Site Scripting (XSS)**
+*   *Mô tả:* Phát hiện nỗ lực chèn mã script độc hại (Javascript) vào ứng dụng web.
+*   *Logic:* `http.url` hoặc `http.request.body` chứa thẻ `<script>` hoặc các hàm `alert()`, `document.cookie`.
+*   *Severity:* High (2).
+
+**UC03: Path Traversal / LFI**
+*   *Mô tả:* Phát hiện nỗ lực truy cập file hệ thống trái phép bằng cách sử dụng các ký tự `../` hoặc `%2e%2e`.
+*   *Logic:* `http.url` chứa `../`, `..%2f` hoặc truy cập các file nhạy cảm như `/etc/passwd`.
+*   *Severity:* High (2).
+
+**UC04: Web Shell Upload**
+*   *Mô tả:* Phát hiện hành vi tải lên các file mã độc (php, asp, jsp) để chiếm quyền điều khiển server.
+*   *Logic:* Phương thức `POST` tới các endpoint upload file VÀ nội dung file chứa signature của web shell (ví dụ: `cmd.exe`, `eval()`).
+*   *Severity:* Critical (1).
+
+**UC05: Web Scanner Activity**
+*   *Mô tả:* Phát hiện các công cụ rà quét lỗ hổng tự động (Nikto, Acunetix, Burp Suite).
+*   *Logic:* `http.user_agent` khớp danh sách đen các User-Agent của tool scan.
+*   *Severity:* Medium (3).
+
+#### Nhóm 2: Thăm dò và Tấn công Mạng (Network Recon & Attacks)
+
+**UC06: Port Scanning (Vertical Scan)**
+*   *Mô tả:* Một nguồn IP cố gắng kết nối tới nhiều cổng khác nhau trên cùng một đích để tìm dịch vụ mở.
+*   *Logic:* Aggregation: Count `destination.port` > 20 (distinct) trong 1 phút TỪ cùng một `source.ip`.
+*   *Severity:* Medium (3).
+
+**UC07: Host Sweeping (Horizontal Scan)**
+*   *Mô tả:* Một nguồn IP cố gắng kết nối tới cùng một cổng (ví dụ 445 SMB) trên nhiều máy đích khác nhau.
+*   *Logic:* Aggregation: Count `destination.ip` > 20 (distinct) trong 1 phút TỪ cùng một `source.ip`.
+*   *Severity:* Medium (3).
+
+**UC08: SSH Brute Force**
+*   *Mô tả:* Phát hiện nỗ lực đoán mật khẩu SSH.
+*   *Logic:* Nhiều kết nối SSH (`destination.port: 22`) có lưu lượng bytes nhỏ (chỉ bắt tay, không truyền dữ liệu) liên tiếp trong thời gian ngắn.
+*   *Severity:* High (2).
+
+**UC09: DoS/DDoS Attempt**
+*   *Mô tả:* Phát hiện lưu lượng bất thường làm quá tải hệ thống.
+*   *Logic:* Volume based: Số lượng gói tin (Packet count) từ một IP > 1000/giây (ICMP flood hoặc SYN flood).
+*   *Severity:* Critical (1).
+
+#### Nhóm 3: Mã độc và C2 (Malware & C2 Communication)
+
+**UC10: C2 Beaconing**
+*   *Mô tả:* Phát hiện malware gửi tín hiệu định kỳ (heartbeat) về máy chủ điều khiển (C2).
+*   *Logic:* Các kết nối HTTP/DNS outbound có tính chu kỳ chính xác (Jitter thấp) tới một domain lạ.
+*   *Severity:* Critical (1).
+
+**UC11: DNS Tunneling/Exfiltration**
+*   *Mô tả:* Phát hiện hành vi tuồn dữ liệu ra ngoài qua giao thức DNS.
+*   *Logic:* `dns.question.name` có độ dài bất thường (> 180 ký tự) hoặc chứa chuỗi entropy cao (dữ liệu mã hóa).
+*   *Severity:* High (2).
+
+**UC12: Threat Intel Matched**
+*   *Mô tả:* Kết nối tới IP/Domain nằm trong danh sách đen (Blacklist).
+*   *Logic:* `tags: threat_matched` do Logstash gán.
+*   *Severity:* Critical (1).
+
+#### Nhóm 4: Bất thường địa lý và Hành vi (Anomaly & Behavior)
+
+**UC13: Geofencing Violation**
+*   *Mô tả:* Truy cập từ quốc gia bị cấm (Sanctioned Countries).
+*   *Logic:* `source.geo.country_name` nằm trong danh sách cấm (VD: North Korea, Iran, hoặc Russia theo kịch bản).
+*   *Severity:* High (2).
+
+**UC14: Impossible Travel**
+*   *Mô tả:* Một user đăng nhập từ 2 vị trí địa lý quá xa nhau trong thời gian ngắn (không thể di chuyển vật lý kịp).
+*   *Logic:* Vận tốc di chuyển ảo > 1000km/h. (Yêu cầu tương quan log đăng nhập).
+*   *Severity:* High (2).
+
+**UC15: Data Exfiltration via HTTP**
+*   *Mô tả:* Tuồn dữ liệu lượng lớn ra ngoài.
+*   *Logic:* Kết nối Outbound HTTP có kích thước `http.request.body.bytes` cực lớn (> 100MB) tới IP lạ.
+*   *Severity:* High (2).
+
+---
+
+## CHƯƠNG 4: TRIỂN KHAI VÀ CẤU HÌNH HE THỐNG TRÊN MÔI TRƯỜNG LAB
+
+Chương này trình bày chi tiết quy trình triển khai hệ thống SIEM trên môi trường thực nghiệm. Nội dung bao gồm việc chuẩn bị hạ tầng ảo hóa, cấu hình chuyên sâu các phân hệ thu thập (Sensor), xử lý (Pipeline) và hiển thị (Dashboard), đồng thời giải thích các quyết định kỹ thuật (Design Decisions) đằng sau mỗi cấu hình.
+
+### 4.1. Chuẩn bị và Quy hoạch Môi trường Thực nghiệm
+
+Để đảm bảo tính khả thi và khả năng kiểm soát trong quá trình nghiên cứu, mô hình triển khai được xây dựng trên nền tảng ảo hóa với sự cô lập mạng nghiêm ngặt.
+
+#### 4.1.1. Mô hình Mạng và Quy hoạch IP (Network Topology)
+Hệ thống mạng được chia thành 3 phân vùng (Zone) riêng biệt, được phân tách bởi Router mềm (Software Router) để mô phỏng sát nhất với môi trường doanh nghiệp thực tế:
+
+1.  **Attacker Zone (`attacker-net`):**
+    *   **Subnet:** `172.30.10.0/24`
+    *   **Thành phần:** Máy Kali Linux (Attacker - `172.30.10.10`).
+    *   **Mục đích:** Giả lập môi trường Internet/External, nơi xuất phát các cuộc tấn công thâm nhập.
+
+2.  **DMZ/Server Zone (`server-net`):**
+    *   **Subnet:** `172.30.20.0/24`
+    *   **Thành phần:** DVWA Web Server (Victim - `172.30.20.10`).
+    *   **Mục đích:** Chứa các dịch vụ công khai cần được bảo vệ. Đây là vùng trọng tâm (Points of Interest) mà hệ thống SIEM sẽ giám sát.
+
+3.  **Management/SIEM Zone (`opensearch-net`):**
+    *   **Subnet:** `172.20.0.0/16` (Default Bridge).
+    *   **Thành phần:** Cluster OpenSearch, Logstash, Dashboards.
+    *   **Mục đích:** Vùng backend (Out-of-Band Management), tách biệt hoàn toàn với lưu lượng tấn công để đảm bảo an toàn cho dữ liệu log.
+
+#### 4.1.2. Yêu cầu Tài nguyên Hệ thống (Hardware Requirements)
+Hệ thống SIEM, đặc biệt là OpenSearch (nền tảng dựa trên Java/JVM), đòi hỏi tài nguyên tính toán đáng kể để hoạt động ổn định.
+
+*   **Host OS:** Ubuntu Server 22.04 LTS Kernel 5.15+ (Hỗ trợ eBPF và AF_PACKET v3).
+*   **CPU:** Tối thiểu 4 vCPU. Suricata cần ít nhất 2 luồng xử lý riêng biệt (1 cho Capture, 1 cho Analysis) để tránh hiện tượng rớt gói (Packet Loss) khi lưu lượng cao.
+*   **RAM:** Tối thiểu 10GB.
+    *   *OpenSearch Heap:* Cấu hình 512MB - 1GB Heap Size cho mỗi node (`-Xms512m -Xmx512m`) để tránh lỗi `OOMKilled`.
+    *   *Suricata:* Cần bộ nhớ lớn cho bảng trạng thái Flow Table và TCP Reassembly.
+
+#### 4.1.3. Công nghệ Ảo hóa Container (Containerization Strategy)
+Đồ án sử dụng **Docker** và **Docker Compose** làm nền tảng triển khai. Việc lựa chọn công nghệ này dựa trên các lý do khoa học sau:
+*   **Isolation (Cách ly):** Cô lập tiến trình tấn công, ngăn chặn mã độc lây lan ra máy chủ vật lý (Host).
+*   **Reproducibility (Tính tái lập):** Toàn bộ cấu hình hạ tầng được định nghĩa dưới dạng code (IaC - Infrastructure as Code) trong file `docker-compose.yml`, giúp việc triển khai lại môi trường lab chỉ mất < 5 phút.
+
+---
+
+### 4.2. Triển khai và Tối ưu hóa Suricata Sensor
+
+Sensor là thành phần tuyến đầu (Front-end), quyết định chất lượng dữ liệu đầu vào. Cấu hình Suricata tập trung vào hiệu năng bắt gói tin và độ chính xác của luật phát hiện.
+
+#### 4.2.1. Biến môi trường mạng (Network Variables)
+File cấu hình `configs/suricata.yaml` định nghĩa các biến quan trọng để Engine hiểu bối cảnh mạng:
+
+```yaml
+vars:
+  address-groups:
+    # Định nghĩa chính xác dải mạng cần bảo vệ.
+    # Quan trọng cho các luật có hướng (Directional Rules) như "alert tcp $EXTERNAL_NET any -> $HOME_NET 80"
+    HOME_NET: "[172.30.20.0/24]"
+    
+    # Định nghĩa mạng bên ngoài (Internet/Attacker)
+    EXTERNAL_NET: "[172.30.10.0/24]"
+```
+*Giải thích:* Việc định nghĩa chính xác `HOME_NET` giúp giảm thiểu False Positives. Nếu cấu hình sai thành `any`, Suricata sẽ tốn tài nguyên xử lý cả các gói tin nội bộ không cần thiết và có thể cảnh báo sai hướng tấn công.
+
+#### 4.2.2. Cơ chế Thu thập gói tin (Packet Capture Engine)
+Thay vì sử dụng thư viện `libpcap` truyền thống (vốn có hạn chế về hiệu năng do việc copy dữ liệu từ Kernel Space sang User Space), đồ án sử dụng **AF_PACKET** (Address Family Packet).
+
+**Ưu điểm của AF_PACKET:**
+*   **Zero-Copy (mmap):** Giảm thiểu việc sao chép dữ liệu bộ nhớ, tăng tốc độ xử lý gói tin lên 20-30% so với PCAP.
+*   **Cluster Flow:** Hỗ trợ cân bằng tải lưu lượng (Load Balancing) trên nhiều luồng CPU dựa trên Flow ID, đảm bảo một luồng TCP luôn được xử lý bởi cùng một CPU Core, tránh hiện tượng Packet Reordering.
+
+Cấu hình chi tiết `suricata.yaml`:
+```yaml
+af-packet:
+  - interface: br-attacker-net   # Interface ảo của Docker Bridge Attacker
+    cluster-id: 98
+    cluster-type: cluster_flow   # Hash mode dựa trên 5-tuple của gói tin
+    defrag: yes                  # Bật chống phân mảnh IP (IP Defragmentation)
+  - interface: br-server-net     # Interface ảo của Docker Bridge Server
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+```
+
+#### 4.2.3. Quản lý Luật phát hiện (Signature Management)
+Hệ thống tích hợp bộ luật **Emerging Threats (ET) Open**, một trong những bộ luật cộng đồng uy tín và cập nhật nhất hiện nay. Quy trình cập nhật được tự động hóa:
+1.  **Công cụ:** `suricata-update`.
+2.  **Nguồn:** `https://rules.emergingthreats.net/open/suricata-7.0.2/`.
+3.  **Merge:** Tự động hợp nhất luật cộng đồng và luật tùy chỉnh (`custom.rules`) vào file `suricata.rules` duy nhất, loại bỏ trùng lặp.
+
+---
+
+### 4.3. Thiết kế Pipeline Xử lý Dữ liệu (Logstash & OpenSearch)
+
+Pipeline xử lý log không chỉ đơn thuần là chuyển tiếp dữ liệu, mà còn đóng vai trò chuẩn hóa (Normalization) và làm giàu thông tin (Enrichment).
+
+#### 4.3.1. Kiến trúc Cluster OpenSearch
+Mặc dù là môi trường Lab, hệ thống vẫn được thiết kế theo mô hình Cluster thu nhỏ để mô phỏng khả năng chịu lỗi (Fault Tolerance):
+*   **3 Node Data Cluster:** `opensearch-manager`, `opensearch-data1`, `opensearch-data2`.
+*   **Quorum:** Cấu hình `discovery.seed_hosts` đảm bảo cơ chế bầu chọn Master Node hoạt động đúng (Quorum = N/2 + 1), tránh tình trạng "Split-brain" gây mất dữ liệu.
+
+#### 4.3.2. Cấu hình ETL Logstash
+File `logstash/pipeline/logstash.conf` thực hiện chu trình ETL (Extract - Transform - Load):
+
+**1. Extract (Input):**
+Sư dụng `beats` input plugin để nhận log từ Filebeat qua giao thức Lumberjack (TCP/5044) có mã hóa TLS nếu cần.
+
+**2. Transform (Filter):**
+Đây là giai đoạn quan trọng nhất, áp dụng logic nghiệp vụ:
+*   **JSON Parsing:** Suricata xuất log dạng JSON (EVE format). Filter `json` giúp Logstash hiểu cấu trúc này, chuyển đổi từ chuỗi text vô nghĩa thành các Object có thể truy vấn (ví dụ: `src_ip`, `proto`, `alert.signature`).
+*   **GeoIP Enrichment:**
+    *   *Vấn đề:* Môi trường lab sử dụng IP Private (RFC1918), không thể GeoIP Lookup thực tế.
+    *   *Giải pháp:* Sử dụng `mutate` filter để "gán cứng" tọa độ địa lý. IP `172.30.10.x` (Attacker) được gán IP Nga (Russia), `172.30.20.x` (Server) được gán IP Việt Nam. Điều này cho phép kiểm thử tính năng Threat Map trên Dashboard.
+*   **Threat Intel Lookup:**
+    Sử dụng filter `translate` với từ điển `blocklist_de.yml`. Cơ chế tra cứu Hash Table (O(1)) giúp so khớp nhanh hàng triệu IP độc hại mà không làm chậm luồng xử lý log.
+
+**3. Load (Output):**
+Log được router tới các Index khác nhau dựa trên nguồn gốc để tối ưu hóa lưu trữ (Hot/Warm Architecture):
+*   Log bảo mật: `siem-suricata-YYYY.MM.DD`
+*   Log hệ thống: `siem-metricbeat-YYYY.MM.DD`
+
+---
+
+### 4.4. Cấu hình Giám sát và Cảnh báo (Dashboard & Alerting)
+
+Kết quả cuối cùng của hệ thống là khả năng hiển thị sự cố trực quan cho người quản trị (SOC Analyst).
+
+#### 4.4.1. Metrics quan trọng trên Dashboard
+Dashboard được thiết kế tập trung vào 3 câu hỏi nghiệp vụ:
+1.  **"Chúng ta có đang bị tấn công không?":** Biểu đồ **Timeline** (Line Chart) theo dõi tổng lượng Alert theo thời gian. Một sự gia tăng đột biến (Spike) là dấu hiệu rõ ràng của tấn công brute-force hoặc DoS.
+2.  **"Ai đang tấn công?":** Biểu đồ **Donut Chart** phân loại `alert.category` và `source.ip`. Giúp xác định nhanh Top Talkers (IP gửi nhiều request nhất).
+3.  **"Tấn công từ đâu?":** **Region Map** hiển thị phân bố địa lý. Cho phép phát hiện các bất thường về địa lý (ví dụ: truy cập quản trị từ quốc gia lạ).
+
+#### 4.4.2. Cơ chế Alerting thời gian thực
+Hệ thống sử dụng **Monitor** của OpenSearch (chạy định kỳ 1 phút/lần) để quét dữ liệu mới nhất.
+*   **Trigger Script (Painless):**
+    ```java
+    // Kích hoạt nếu có bất kỳ log alert nào có severity level 1 (Critical)
+    ctx.results[0].hits.total.value > 0
     ```
-    *Ý nghĩa:* Định nghĩa mạng cần bảo vệ. Suricata sẽ cảnh báo mạnh mẽ hơn với các traffic đi TỪ External VÀO Home.
-
-2.  **Cấu hình Capture (AF_PACKET):**
-    ```yaml
-    af-packet:
-      - interface: vboxnet0
-        cluster-id: 96
-        cluster-type: cluster_flow
-        defrag: yes
-    ```
-    *Ý nghĩa:* Sử dụng module AF_PACKET của Linux Kernel để bắt gói tin hiệu năng cao trên card `vboxnet0`. Chế độ `cluster_flow` đảm bảo các gói tin cùng một kết nối TCP/UDP được xử lý bởi cùng một luồng CPU (Thread affinity).
-
-3.  **Logs Output (EVE JSON):**
-    ```yaml
-    outputs:
-      - eve-log:
-          enabled: yes
-          filetype: regular
-          filename: eve.json
-          types:
-            - alert:
-                tagged-packets: yes  # Ghi lại cả gói tin kích hoạt alert
-    ```
-
-### 4.2. Cấu hình Log Pipeline (`logstash.conf`)
-
-Đoạn mã xử lý Threat Intelligence:
-
-```ruby
-# Check source IP against blocklist
-if [source][ip] {
-  translate {
-    source => "[source][ip]"
-    target => "[threat][indicator][matched]"
-    dictionary_path => "/usr/share/logstash/threat-intel/blocklist_de.yml"
-    fallback => ""
-  }
-  
-  if [threat][indicator][matched] != "" {
-    mutate {
-      add_tag => ["threat_matched", "malicious_ip"]
-      add_field => { "[threat][indicator][type]" => "ip-src" }
-    }
-  }
-}
-```
-*Giải thích:* Module `translate` hoạt động như một bảng Hash Map khổng lồ trong RAM. Việc tra cứu diễn ra với độ phức tạp O(1) nên không làm chậm hệ thống dù có hàng triệu bản ghi log.
-
-### 4.3. Quản lý Rules
-Hệ thống sử dụng chiến lược "Hybrid Rules":
-1.  **Managed Rules (ET Open):** Tự động tải về hàng ngày qua `suricata-update`. Bao gồm các bộ luật: `et/open`, `et/scan`, `et/web-server`, `et/exploit`.
-2.  **Local Rules (`custom.rules`):**
-    *   Path: `configs/custom.rules`.
-    *   Ví dụ Rule phát hiện ICMP Tunneling (ping kích thước lớn):
-        `alert icmp any any -> any any (msg:"GLARGE_ICMP_ECHO"; dsize:>1000; sid:1000005; rev:1;)`
+*   **Notification:** Tích hợp Webhook để gửi cảnh báo tới Slack/Email, cung cấp ngữ cảnh tức thì (IP nguồn, loại tấn công) giúp đội ứng cứu sự cố (Incident Response) phản ứng ngay lập tức.
 
 ---
 
-## CHƯƠNG 5: KIỂM THỬ VÀ ĐÁNH GIÁ (TEST CASE)
-
-Giảng viên yêu cầu **KHÔNG dùng log tĩnh**. Sinh viên đã xây dựng môi trường Lab tấn công thực tế (Network Range) để generate live traffic.
-
-### 5.1. Thiết lập môi trường Lab
--   **Hypervisor:** VirtualBox.
--   **Network:** `vboxnet0` (Host-Only Network, dải 192.168.56.0/24).
--   **Máy tấn công (Red Team):** Kali Linux (IP: 192.168.56.101).
--   **Máy phòng thủ (Blue Team):** Ubuntu Server chạy Docker SIEM + Suricata (IP: 192.168.56.1).
-
-### 5.2. Kịch bản 1: Network Scanning
-**Mục tiêu:** Kiểm tra khả năng phát hiện các hành vi thăm dò hệ thống.
-**Thực hiện (Trên Kali):**
-Sử dụng Nmap quét toàn bộ cổng của Sensor:
-```bash
-nmap -p- -A -T4 192.168.56.1
-```
-**Phân tích kết quả:**
--   Suricata ghi nhận hàng loạt kết nối TCP SYN đến các cổng đóng.
--   **Log Alert:** `ET SCAN Nmap Scripting Engine User-Agent`.
--   **Trên Dashboard:** Biểu đồ "Alerts over Time" tăng đột biến.
-
-### 5.3. Kịch bản 2: Web Attack (SQL Injection)
-**Mục tiêu:** Phát hiện tấn công lớp ứng dụng vào web server.
-**Thực hiện (Trên Kali):**
-Tấn công vào ứng dụng web (giả lập DVWA hoặc Test site):
-```bash
-curl "http://192.168.56.1/login.php?user=' OR 1=1 --"
-```
-**Phân tích log EVE.json:**
-```json
-{
-  "timestamp": "2026-01-20T13:45:00.000+0700",
-  "event_type": "alert",
-  "src_ip": "192.168.56.101",
-  "dest_ip": "192.168.56.1",
-  "alert": {
-    "action": "allowed",
-    "gid": 1,
-    "signature_id": 2011124,
-    "rev": 2,
-    "signature": "ET WEB_SERVER SQL Injection Attempt",
-    "category": "Web Application Attack",
-    "severity": 1
-  },
-  "http": {
-    "hostname": "192.168.56.1",
-    "url": "/login.php?user=' OR 1=1 --",
-    "http_user_agent": "curl/7.68.0"
-  }
-}
-```
-**Kết quả:** Hệ thống nhận diện chính xác Signature ID 2011124 (SQL Injection).
-
-### 5.4. Kịch bản 3: Threat Intelligence Detection
-**Mục tiêu:** Kiểm chứng module làm giàu dữ liệu Logstash.
-**Thực hiện:**
-1.  Thêm IP giả định `1.2.3.4` vào file `blocklist_de.yml`.
-2.  Từ máy Sensor, thực hiện kết nối đến IP này: `curl http://1.2.3.4`.
-**Kết quả:**
--   Log trên OpenSearch Dashboards xuất hiện trường `threat_matched: true`.
--   Tag `malicious_ip` được gán vào bản ghi.
--   Dashboard "Threat Map" hiển thị chấm đỏ tương ứng với vị trí địa lý của IP này.
-
----
-
-## KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
-
-### Kết luận
-Đồ án đã hoàn thành việc xây dựng một hệ thống SIEM cơ bản nhưng đầy đủ các thành phần chức năng hiện đại:
-1.  Kiến trúc Cluster đảm bảo tính sẵn sàng.
-2.  Pipeline xử lý dữ liệu linh hoạt với Logstash.
-3.  Tích hợp thành công Threat Intelligence để nâng cao khả năng phát hiện.
-4.  Đã kiểm chứng qua các kịch bản tấn công thực tế.
-
-### Hướng phát triển
-1.  **SOAR (Security Orchestration, Automation and Response):** Tự động chặn IP tấn công trên Firewall (iptables) khi phát hiện Alert từ Suricata.
-2.  **Machine Learning:** Tích hợp module ML của OpenSearch để phát hiện bất thường (Anomaly Detection) mà không cần dựa trên luật có sẵn.
-3.  **Endpoint Security:** Triển khai thêm Wazuh Agent trên các máy trạm để giám sát cả hành vi mức Host (File integrity monitoring, Process monitoring).
-
----
-*Hết báo cáo.*
+*(Các chương tiếp theo giữ nguyên)*

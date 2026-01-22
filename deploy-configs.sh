@@ -204,6 +204,8 @@ deploy_suricata_configs() {
     log_info "Đặt permissions cho Suricata configs..."
     chmod 644 "${SURICATA_CONFIG_DIR}/suricata.yaml" 2>/dev/null || true
     chmod 644 "${SURICATA_RULES_DIR}/custom.rules" 2>/dev/null || true
+    chmod 755 "${SURICATA_CONFIG_DIR}" 2>/dev/null || true
+    chmod 755 "${SURICATA_RULES_DIR}" 2>/dev/null || true
     chown -R suricata:suricata "${SURICATA_CONFIG_DIR}" 2>/dev/null || true
 }
 

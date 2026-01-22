@@ -13,14 +13,14 @@ alert http any any -> any any (msg:"ATTACK SQL Injection Attempt"; flow:to_serve
 alert http any any -> any any (msg:"ATTACK SQL Injection OR 1=1"; flow:to_server,established; content:"OR"; nocase; content:"1"; content:"="; content:"1"; distance:0; sid:1000011; rev:1;)
 
 # XSS Detection
-alert http any any -> any any (msg:"ATTACK XSS script tag"; flow:to_server,established; http_uri; content:"<script>"; nocase; sid:1000012; rev:2;)
-alert http any any -> any any (msg:"ATTACK XSS encoded"; flow:to_server,established; http_uri; content:"%3Cscript%3E"; nocase; sid:1000015; rev:1;)
+alert http any any -> any any (msg:"ATTACK XSS script tag"; flow:to_server,established; content:"<script>"; http_uri; nocase; sid:1000012; rev:2;)
+alert http any any -> any any (msg:"ATTACK XSS encoded"; flow:to_server,established; content:"%3Cscript%3E"; http_uri; nocase; sid:1000015; rev:1;)
 
 # Nikto Scanner Detection
-alert http any any -> any any (msg:"SCAN Nikto Web Scanner"; flow:to_server,established; http_user_agent; content:"Nikto"; nocase; sid:1000013; rev:2;)
+alert http any any -> any any (msg:"SCAN Nikto Web Scanner"; flow:to_server,established; content:"Nikto"; http_user_agent; nocase; sid:1000013; rev:2;)
 
 # Directory Traversal
-alert http any any -> any any (msg:"ATTACK Directory Traversal"; flow:to_server,established; http_uri; content:"../"; sid:1000014; rev:2;)
+alert http any any -> any any (msg:"ATTACK Directory Traversal"; flow:to_server,established; content:"../"; http_uri; sid:1000014; rev:2;)
 
 # BlackSun Scanner Detection
 alert http any any -> any any (msg:"SCAN BlackSun User-Agent"; content:"BlackSun"; http_user_agent; sid:1000017; rev:3;)

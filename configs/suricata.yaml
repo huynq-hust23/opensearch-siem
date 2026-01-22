@@ -680,22 +680,15 @@ af-packet:
   #   # to yes, the kernel will do the needed defragmentation before sending the packets.
   #   defrag: yes
 
-  # Loopback interface for localhost/Docker traffic
-  #- interface: lo
-  #  cluster-id: 97
-  #  cluster-type: cluster_flow
-
   # Docker Bridge: Attacker Network (attacker-net)
   - interface: br-attacker-net
-    cluster-id: 98
-    cluster-type: cluster_flow
+    threads: 1
     defrag: yes
     checksum-checks: no
 
   # Docker Bridge: Server Network (server-net)
   - interface: br-server-net
-    cluster-id: 99
-    cluster-type: cluster_flow
+    threads: 1
     defrag: yes
     checksum-checks: no
 
@@ -2267,6 +2260,7 @@ default-rule-path: /var/lib/suricata/rules
 
 rule-files:
   - suricata.rules
+  - /etc/suricata/rules/custom.rules
 
 ##
 ## Auxiliary configuration files.
