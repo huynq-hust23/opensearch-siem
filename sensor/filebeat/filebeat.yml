@@ -1,0 +1,29 @@
+# Filebeat configuration for Network Security Sensor
+# Copy this file to /etc/filebeat/filebeat.yml
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+# Disable Elasticsearch output
+output.elasticsearch:
+  enabled: false
+
+# Enable Logstash output
+output.logstash:
+  enabled: true
+  hosts: ["127.0.0.1:5044"]
+
+# Logging settings
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+# Processors for enrichment
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~

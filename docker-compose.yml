@@ -102,7 +102,7 @@ services:
       - opensearch-net
     # ========= LOGSTASH =========
   logstash:
-    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:latest
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin@sha256:43b0cdaf26edca812a9eafb684ae6101d8f2fd27165345737c39c04a6c7430eb
     container_name: logstash
     ports:
       - "5044:5044"
@@ -110,12 +110,54 @@ services:
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./sensor/threat-intel:/usr/share/logstash/threat-intel:ro
     depends_on:
       - opensearch-ingest
     environment:
       - LOGSTASH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
     networks:
       - opensearch-net
+
+  # ========= ATTACKER =========
+  kali-attacker:
+    image: kalilinux/kali-rolling
+    container_name: kali-attacker
+    tty: true # Keep container running
+    networks:
+      attacker-net:
+        ipv4_address: 172.30.10.10
+    cap_add:
+      - NET_ADMIN
+    command: tail -f /dev/null
+
+  # ========= VICTIM (DVWA) =========
+  dvwa:
+    image: vulnerables/web-dvwa:latest
+    container_name: dvwa
+    restart: unless-stopped
+    networks:
+      server-net:
+        ipv4_address: 172.30.20.10
+    ports:
+      - "8080:80"
+    cap_add:
+      - NET_ADMIN
+
+  # ========= ROUTER =========
+  router:
+    image: alpine:latest
+    container_name: router
+    command: tail -f /dev/null
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      attacker-net:
+        ipv4_address: 172.30.10.254
+      server-net:
+        ipv4_address: 172.30.20.254
+    restart: always
 
 volumes:
   opensearch-data1:
@@ -124,3 +166,17 @@ volumes:
 
 networks:
   opensearch-net:
+  attacker-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-attacker-net
+    ipam:
+      config:
+        - subnet: 172.30.10.0/24
+  server-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-server-net
+    ipam:
+      config:
+        - subnet: 172.30.20.0/24
