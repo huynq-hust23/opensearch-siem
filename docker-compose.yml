@@ -44,6 +44,10 @@ services:
     networks:
       - opensearch-net
 
+
+
+      
+
   # ========= DATA 1 =========
   opensearch-data1:
     image: opensearchproject/opensearch:2.11.0
