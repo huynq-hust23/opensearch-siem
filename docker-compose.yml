@@ -124,7 +124,9 @@ services:
 
   # ========= ATTACKER =========
   kali-attacker:
-    image: kalilinux/kali-rolling
+    build:
+      context: ./kali
+    image: opensearch-siem-kali:rolling
     container_name: kali-attacker
     tty: true # Keep container running
     networks:
@@ -132,6 +134,7 @@ services:
         ipv4_address: 172.30.10.10
     cap_add:
       - NET_ADMIN
+      - NET_RAW
     command: tail -f /dev/null
 
   # ========= VICTIM (DVWA) =========

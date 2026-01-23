@@ -117,6 +117,8 @@ Tại thư mục root:
 docker compose up -d
 ```
 
+Ghi chú: container `kali-attacker` được build từ `kali/Dockerfile` và đã cài sẵn các tool cần cho `attack_scripts/` (curl/nmap/nc/hping3) để tránh phải cài lại mỗi lần.
+
 Lưu ý: lần khởi động đầu tiên, OpenSearch có thể mất 1–3 phút để sẵn sàng.
 
 Health-check nhanh:

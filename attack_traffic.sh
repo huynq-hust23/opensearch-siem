@@ -11,7 +11,12 @@ if ! $DOCKER_BIN ps >/dev/null 2>&1; then
 fi
 
 echo "Ensuring curl exists inside $KALI_CONTAINER..."
-$DOCKER_BIN exec -i "$KALI_CONTAINER" bash -lc 'apt-get update -qq >/dev/null 2>&1 || true; command -v curl >/dev/null 2>&1 || (apt-get install -y -qq curl >/dev/null 2>&1)'
+$DOCKER_BIN exec -i "$KALI_CONTAINER" bash -lc 'command -v curl >/dev/null 2>&1'
+if [ $? -ne 0 ]; then
+    echo "ERROR: curl is not available inside $KALI_CONTAINER."
+    echo "Hint: rebuild the Kali image: docker compose build kali-attacker"
+    exit 1
+fi
 
 echo "Starting ATTACK Traffic Generator..."
 echo "Press [CTRL+C] to stop."
