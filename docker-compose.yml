@@ -6,47 +6,24 @@ services:
     environment:
       - cluster.name=siem-cluster
       - node.name=opensearch-manager
-      - node.roles=cluster_manager
+      - node.roles=data,cluster_manager,ingest
       - discovery.seed_hosts=opensearch-manager,opensearch-data1,opensearch-data2
       - cluster.initial_cluster_manager_nodes=opensearch-manager,opensearch-data1,opensearch-data2
       - network.host=0.0.0.0
       - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    mem_limit: 2g
     ulimits:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 65536, hard: 65536 }
     ports:
       - "9200:9200"
     volumes:
-      - ./opensearch-config/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
+      - opensearch-manager:/usr/share/opensearch/data
+      - ./configs/opensearch/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
     networks:
       - opensearch-net
-
-  # ========= INGEST =========
-  opensearch-ingest:
-    image: opensearchproject/opensearch:2.11.0
-    container_name: opensearch-ingest
-    environment:
-      - cluster.name=siem-cluster
-      - node.name=opensearch-ingest
-      - node.roles=ingest
-      - discovery.seed_hosts=opensearch-manager,opensearch-data1,opensearch-data2
-      - network.host=0.0.0.0
-      - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-    ulimits:
-      memlock: { soft: -1, hard: -1 }
-      nofile: { soft: 65536, hard: 65536 }
-    volumes:
-      - ./opensearch-config/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
-    networks:
-      - opensearch-net
-
-
-
-      
 
   # ========= DATA 1 =========
   opensearch-data1:
@@ -55,15 +32,16 @@ services:
     environment:
       - cluster.name=siem-cluster
       - node.name=opensearch-data1
-      - node.roles=data,cluster_manager
+      - node.roles=data,cluster_manager,ingest
       - discovery.seed_hosts=opensearch-manager,opensearch-data1,opensearch-data2
       - network.host=0.0.0.0
       - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    mem_limit: 2g
     volumes:
       - opensearch-data1:/usr/share/opensearch/data
-      - ./opensearch-config/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
+      - ./configs/opensearch/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
     ulimits:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 65536, hard: 65536 }
@@ -77,15 +55,16 @@ services:
     environment:
       - cluster.name=siem-cluster
       - node.name=opensearch-data2
-      - node.roles=data,cluster_manager
+      - node.roles=data,cluster_manager,ingest
       - discovery.seed_hosts=opensearch-manager,opensearch-data1,opensearch-data2
       - network.host=0.0.0.0
       - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    mem_limit: 2g
     volumes:
       - opensearch-data2:/usr/share/opensearch/data
-      - ./opensearch-config/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
+      - ./configs/opensearch/internal_users.yml:/usr/share/opensearch/config/opensearch-security/internal_users.yml
     ulimits:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 65536, hard: 65536 }
@@ -112,11 +91,11 @@ services:
       - "5044:5044"
       - "5000:5000/tcp"
     volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
-      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./configs/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./configs/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
       - ./sensor/threat-intel:/usr/share/logstash/threat-intel:ro
     depends_on:
-      - opensearch-ingest
+      - opensearch-manager
     environment:
       - LOGSTASH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
     networks:
@@ -177,6 +156,7 @@ services:
       - opensearch-net
 
 volumes:
+  opensearch-manager:
   opensearch-data1:
   opensearch-data2:
 

@@ -83,10 +83,10 @@ check_suricata_installed() {
 
 
 check_config_files() {
-    print_header "Kiểm tra file cấu hình trong configs/"
+    print_header "Kiểm tra file cấu hình trong configs/suricata/"
     
     if [[ ! -d "${CONFIGS_DIR}" ]]; then
-        log_warning "Thư mục configs/ không tồn tại. Đang tạo..."
+        log_warning "Thư mục configs/suricata/ không tồn tại. Đang tạo..."
         mkdir -p "${CONFIGS_DIR}"
     fi
     
@@ -94,22 +94,22 @@ check_config_files() {
     local files_found=0
     
     if [[ -f "${CONFIGS_DIR}/suricata.yaml" ]]; then
-        log_success "Tìm thấy: configs/suricata.yaml"
+        log_success "Tìm thấy: configs/suricata/suricata.yaml"
         ((files_found++))
     else
-        log_warning "Không tìm thấy: configs/suricata.yaml"
+        log_warning "Không tìm thấy: configs/suricata/suricata.yaml"
     fi
     
     if [[ -f "${CONFIGS_DIR}/custom.rules" ]]; then
-        log_success "Tìm thấy: configs/custom.rules"
+        log_success "Tìm thấy: configs/suricata/custom.rules"
         ((files_found++))
     else
-        log_warning "Không tìm thấy: configs/custom.rules"
+        log_warning "Không tìm thấy: configs/suricata/custom.rules"
     fi
     
     
     if [[ $files_found -eq 0 ]]; then
-        log_error "Không tìm thấy file cấu hình nào trong configs/"
+        log_error "Không tìm thấy file cấu hình nào trong configs/suricata/"
         return 1
     fi
     

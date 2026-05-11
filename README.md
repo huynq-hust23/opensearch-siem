@@ -26,7 +26,7 @@ sudo usermod -aG docker "$USER"
 - `9200/tcp`: OpenSearch (HTTPS)
 - `5601/tcp`: OpenSearch Dashboards
 - `5044/tcp`: Logstash Beats input (Filebeat → Logstash)
-- `5000/tcp`: Logstash TCP input (dùng cho `simulate_usecases.sh`)
+- `5000/tcp`: Logstash TCP input (dùng cho `scripts/setup/simulate_usecases.sh`)
 - `8080/tcp`: DVWA
 - `8025/tcp`: MailHog Web UI
 - `1025/tcp`: MailHog SMTP (publish ra host; trong docker dùng hostname `mailhog`) 
@@ -60,13 +60,13 @@ sudo sysctl --system >/dev/null
 ## 3) Cấu trúc repo (quan trọng)
 
 - `docker-compose.yml`: dựng OpenSearch/Logstash/Dashboards/DVWA/Kali/router/MailHog.
-- `logstash/pipeline/logstash.conf`: pipeline ingest (Beats 5044 + TCP 5000) → OpenSearch.
-- `configs/suricata.yaml`, `configs/custom.rules`: cấu hình & rule Suricata (HOME/EXTERNAL cho lab).
-- `deploy-configs.sh`: copy configs Suricata vào `/etc/suricata/...`.
+- `configs/logstash/pipeline/logstash.conf`: pipeline ingest (Beats 5044 + TCP 5000) → OpenSearch.
+- `configs/suricata/suricata.yaml`, `configs/suricata/custom.rules`: cấu hình & rule Suricata (HOME/EXTERNAL cho lab).
+- `scripts/setup/deploy-configs.sh`: copy configs Suricata vào `/etc/suricata/...`.
 - `scripts/enable_lab_routing.sh`: bật routing giữa 2 bridge Docker (giữ nguyên source IP).
 - `sensor/deploy.sh`: deploy Filebeat module + TI + restart services.
-- `setup_index_templates.sh`, `setup_email.sh`, `setup_monitors.sh`: cấu hình OpenSearch template/Notifications/Alerting.
-- `simulate_usecases.sh`: mô phỏng an toàn (không tấn công thật) để kiểm thử end-to-end.
+- `scripts/setup/setup_index_templates.sh`, `scripts/setup/setup_email.sh`, `scripts/setup/setup_monitors.sh`: cấu hình OpenSearch template/Notifications/Alerting.
+- `scripts/setup/simulate_usecases.sh`: mô phỏng an toàn (không tấn công thật) để kiểm thử end-to-end.
 
 ## 4) Cài đặt nhanh (khuyến nghị)
 
@@ -85,7 +85,7 @@ OPENSEARCH_URL=https://localhost:9200
 OPENSEARCH_USER=admin
 # OPENSEARCH_PASSWORD=ChangeMe_ReallyStrong_123
 
-# Khi chạy simulate_usecases.sh (TCP input của Logstash)
+# Khi chạy scripts/setup/simulate_usecases.sh (TCP input của Logstash)
 LOGSTASH_HOST=127.0.0.1
 LOGSTASH_PORT=5000
 
@@ -117,7 +117,7 @@ Tại thư mục root:
 docker compose up -d
 ```
 
-Ghi chú: container `kali-attacker` được build từ `kali/Dockerfile` và đã cài sẵn các tool cần cho `attack_scripts/` (curl/nmap/nc/hping3) để tránh phải cài lại mỗi lần.
+Ghi chú: container `kali-attacker` được build từ `kali/Dockerfile` và đã cài sẵn các tool cần cho `scripts/attack/` (curl/nmap/nc/hping3) để tránh phải cài lại mỗi lần.
 
 Lưu ý: lần khởi động đầu tiên, OpenSearch có thể mất 1–3 phút để sẵn sàng.
 
@@ -217,7 +217,7 @@ Sau khi cài xong Suricata/Filebeat, làm tiếp **Bước 4** (deploy cấu hì
 
 ### Bước 4 — Deploy cấu hình Suricata (HOME/EXTERNAL cho lab)
 
-`configs/suricata.yaml` đã cấu hình capture `af-packet` trên 2 bridge Docker:
+`configs/suricata/suricata.yaml` đã cấu hình capture `af-packet` trên 2 bridge Docker:
 - `br-attacker-net`
 - `br-server-net`
 
@@ -228,7 +228,7 @@ Quan trọng:
 Deploy configs:
 
 ```bash
-sudo bash deploy-configs.sh
+sudo bash scripts/setup/deploy-configs.sh
 ```
 
 Nếu Suricata không start do thiếu runtime dir `/run/suricata`, dùng script fix:
@@ -261,9 +261,9 @@ done
 ```
 
 ```bash
-bash setup_index_templates.sh
-bash setup_email.sh
-bash setup_monitors.sh
+bash scripts/setup/setup_index_templates.sh
+bash scripts/setup/setup_email.sh
+bash scripts/setup/setup_monitors.sh
 ```
 
 Kiểm tra nhanh sau khi setup:
@@ -284,7 +284,7 @@ Gợi ý kiểm tra email alert:
 
 ### Cách A — Mô phỏng an toàn (không tấn công thật)
 
-Script `simulate_usecases.sh` sẽ:
+Script `scripts/setup/simulate_usecases.sh` sẽ:
 - ensure index template
 - tạo Notifications email channel (MailHog)
 - tạo Alerting monitors
@@ -294,7 +294,7 @@ Script `simulate_usecases.sh` sẽ:
 Chạy:
 
 ```bash
-bash simulate_usecases.sh
+bash scripts/setup/simulate_usecases.sh
 ```
 
 ### Cách B — Tạo traffic tấn công từ Kali tới DVWA
@@ -302,18 +302,18 @@ bash simulate_usecases.sh
 1) Mở một terminal để theo dõi alert Suricata trên máy sensor:
 
 ```bash
-sudo bash verify_detection.sh
+sudo bash scripts/setup/verify_detection.sh
 ```
 
 2) Tạo traffic tấn công (script sẽ `docker exec` vào container Kali):
 
 ```bash
-bash attack_traffic.sh
+bash scripts/attack/attack_traffic.sh
 ```
 
 Dừng bằng `Ctrl+C`.
 
-Ngoài ra có các script theo use-case trong `attack_scripts/` (ví dụ `attack_scripts/uc01_sqli.sh`). Một số script (như `uc06_port_scan.sh`) cần tool như `nmap` trong môi trường chạy script.
+Ngoài ra có các script theo use-case trong `scripts/attack/` (ví dụ `scripts/attack/uc01_sqli.sh`). Một số script (như `uc06_port_scan.sh`) cần tool như `nmap` trong môi trường chạy script.
 
 Gợi ý nếu muốn chạy `nmap` bên trong Kali container:
 
@@ -330,7 +330,7 @@ docker exec -it kali-attacker bash -lc 'apt-get update && apt-get install -y nma
   - kiểm tra `/var/log/filebeat/filebeat` và `sudo systemctl status filebeat`
   - kiểm tra `output.logstash.hosts` trỏ đúng IP/port `5044`
   - kiểm tra Logstash publish port `5044` trong compose.
-- **Không thấy index `siem-suricata-*`**: kiểm tra pipeline Logstash (`logstash/pipeline/logstash.conf`) và xem stdout logs của container Logstash.
+- **Không thấy index `siem-suricata-*`**: kiểm tra pipeline Logstash (`configs/logstash/pipeline/logstash.conf`) và xem stdout logs của container Logstash.
 
 Xem logs nhanh:
 
