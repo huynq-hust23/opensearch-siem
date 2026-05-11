@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIGS_DIR="${SCRIPT_DIR}/configs"
+CONFIGS_DIR="${SCRIPT_DIR}/../../configs/suricata"
 
 # System paths
 SURICATA_CONFIG_DIR="/etc/suricata"

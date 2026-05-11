@@ -101,21 +101,6 @@ services:
     networks:
       - opensearch-net
 
-  # ========= ATTACKER =========
-  kali-attacker:
-    build:
-      context: ./kali
-    image: opensearch-siem-kali:rolling
-    container_name: kali-attacker
-    tty: true # Keep container running
-    networks:
-      attacker-net:
-        ipv4_address: 172.30.10.10
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    command: tail -f /dev/null
-
   # ========= VICTIM (DVWA) =========
   dvwa:
     image: vulnerables/web-dvwa:latest
@@ -159,7 +144,6 @@ volumes:
   opensearch-manager:
   opensearch-data1:
   opensearch-data2:
-
 
 networks:
   opensearch-net:
