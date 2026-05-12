@@ -9,7 +9,7 @@ _meta:
 # Define your internal users here
 
 admin:
-  hash: "$2y$12$m0lVHMMVXjwDVaMmHCguneGncbk047vx9mvCM.FFiXHRH/PnxRH0W"
+  hash: "$2y$12$0V8zQKLmRBimKKKm/G0yzeRVQJCMpxqW8gSJfGTC8Cq/3Nqcr7At."
   reserved: true
   backend_roles:
   - "admin"
