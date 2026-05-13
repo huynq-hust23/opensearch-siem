@@ -1,0 +1,26 @@
+title: Windows Failed Logon Event
+name: failed_logon
+id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+status: stable
+description: Single failed logon event (ECS - Winlogbeat)
+author: Your Team
+date: 2024/01/01
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    winlog.channel: Security
+    winlog.event_id: 4625
+  filter_machine:
+    winlog.event_data.SubjectUserName|endswith: '$'
+  filter_anonymous:
+    winlog.event_data.TargetUserName:
+      - 'ANONYMOUS LOGON'
+      - '-'
+  condition: selection and not filter_machine and not filter_anonymous
+level: high
+
+witags:
+  - attack.credential_access
+  - attack.t1110

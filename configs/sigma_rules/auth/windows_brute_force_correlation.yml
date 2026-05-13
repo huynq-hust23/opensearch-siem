@@ -1,0 +1,17 @@
+title: Windows Failed Logon Brute Force
+id: a1b2c3d4-0001-0001-0001-000000000001
+status: stable
+description: Detects brute force by counting failed logons per source IP
+correlation:
+  type: event_count
+  rules:
+    - failed_logon
+  group-by:
+    - winlog.event_data.IpAddress
+  timespan: 5m
+  condition:
+    gte: 5
+level: high
+tags:
+  - attack.credential_access
+  - attack.t1110

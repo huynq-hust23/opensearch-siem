@@ -140,6 +140,16 @@ services:
     networks:
       - opensearch-net
 
+  # ========= SIGMA CONVERTER  =========
+  sigma-converter:
+    image: ghcr.io/sigmahq/sigma-cli:latest
+    volumes:
+      - ./configs/sigma_rules:/rules
+    profiles:
+      - tools # chỉ chạy khi gọi thủ công, không auto-start
+    entrypoint: sigma
+    working_dir: /rules
+
 volumes:
   opensearch-manager:
   opensearch-data1:

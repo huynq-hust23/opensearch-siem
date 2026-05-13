@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "/home/huynn31/Desktop/graduate_project/opensearch-siem/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "/home/huynn31/Desktop/graduate_project/opensearch-siem/.venv/lib/python3.12/site-packages"
+  ]
+}
