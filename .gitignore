@@ -1,3 +1,4 @@
 .env
 .internal_users.yml
 .venv
+./cloudflare_tunnel.sh
