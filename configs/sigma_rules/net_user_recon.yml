@@ -1,0 +1,30 @@
+title: Windows Net User Reconnaissance
+id: b2c3d4e5-1234-5678-abcd-ef0123456789
+status: stable
+description: Detects execution of net user command for local/domain account enumeration
+author: HuyNN31
+date: 2026/05/20
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    Image|endswith:
+      - '\net.exe'
+      - '\net1.exe'
+  selection_cmd:
+    CommandLine|contains: 'user'
+  filter_system:
+    User: 'NT AUTHORITY\SYSTEM'
+  condition: selection_img and selection_cmd and not filter_system
+fields:
+  - Image
+  - CommandLine
+  - User
+falsepositives:
+  - Legitimate admin activity
+  - IT helpdesk enumeration
+level: high
+tags:
+  - attack.discovery
+  - attack.t1087.001

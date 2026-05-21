@@ -13,8 +13,9 @@ from sigma.rule import SigmaRule, SigmaLevel
 from sigma.correlations import SigmaCorrelationRule
 from sigma.collection import SigmaCollection
 from sigma.backends.opensearch import OpensearchLuceneBackend
-from sigma.pipelines.windows import windows_logsource_pipeline
-from sigma.pipelines.sysmon import sysmon_pipeline
+from sigma.pipelines.elasticsearch.windows import ecs_windows
+from sigma.processing.transformations import FieldMappingTransformation
+from sigma.processing.pipeline import ProcessingPipeline, ProcessingItem
 from sigma.exceptions import SigmaError
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -25,8 +26,10 @@ CREDS          = (os.getenv("OPENSEARCH_USER", "admin"),
                   os.getenv("OPENSEARCH_PASS", "123456"))
 RULES_DIR      = Path(os.getenv("RULES_DIR",  "configs/sigma_rules"))
 WORKERS        = int(os.getenv("WORKERS",     "10"))
+
 MIN_LEVEL      = SigmaLevel.HIGH
-SCHEDULE_MIN   = 1   # interval monitor chạy (phút) — dùng làm time window cho normal rule
+SCHEDULE_MIN   = 1   # Cửa sổ mặc định cho các rule thông thường (phút)
+CHANNEL_ID     = os.getenv("THEHIVE_CHANNEL_ID", "")
 
 INDEX_MAP = {
     ("windows", "security"):    "siem-winlogbeat-*",
@@ -40,15 +43,9 @@ INDEX_MAP = {
     ("linux", "syslog"):        "siem-filebeat-*",
     ("linux", None):            "siem-filebeat-*",
 }
-DEFAULT_INDEX = "siem-*"
 
-SYSMON_CATEGORIES = {
-    "process_creation", "network_connection", "file_event",
-    "registry_add", "registry_set", "registry_delete",
-    "registry_rename", "registry_event", "image_load",
-    "driver_load", "create_remote_thread", "dns_query",
-    "file_delete", "pipe_created", "process_access",
-}
+DEFAULT_INDEX = "siem-general-*"
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -56,7 +53,7 @@ SYSMON_CATEGORIES = {
 def make_session() -> requests.Session:
     session        = requests.Session()
     session.auth   = CREDS
-    session.verify = False
+    session.verify = False  # Đổi thành True nếu chạy trên Production có CA Certificate
     retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retry)
     session.mount("http://",  adapter)
@@ -79,7 +76,6 @@ def _extract_fields(properties: dict, prefix: str, result: dict):
 
 
 def build_keyword_map(session: requests.Session) -> dict:
-    """1 request lấy toàn bộ mapping của siem-*."""
     keyword_map = {}
     try:
         r = session.get(f"{OPENSEARCH}/siem-*/_mapping", timeout=15)
@@ -101,15 +97,27 @@ def get_keyword_field(field: str, keyword_map: dict) -> str:
     if field in ecs_safe:
         return field
     return f"{field}.keyword"
+
+
+def build_keyword_pipeline(keyword_map: dict):
+    field_mapping = {
+        field: [kw_field]
+        for field, kw_field in keyword_map.items()
+        if kw_field != field
+    }
+    if not field_mapping:
+        return None
+    return ProcessingPipeline(items=[
+        ProcessingItem(transformation=FieldMappingTransformation(field_mapping))
+    ])
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 # ── pipeline / index helpers ──────────────────────────────────────────────────
 def get_pipeline(rule: SigmaRule):
-    cat = rule.logsource.category or ""
-    svc = rule.logsource.service  or ""
-    if cat in SYSMON_CATEGORIES or svc == "sysmon":
-        return sysmon_pipeline() + windows_logsource_pipeline()
+    # Nhận diện quy tắc Windows chuẩn và dịch tự động sang ECS (process.executable...)
+    if rule.logsource.product == "windows":
+        return ecs_windows()
     return None
 
 
@@ -123,8 +131,10 @@ def get_index(rule: SigmaRule) -> str:
     )
 
 
-def make_backend(rule: SigmaRule) -> OpensearchLuceneBackend:
+def make_backend(rule: SigmaRule, keyword_pipeline=None) -> OpensearchLuceneBackend:
     pipeline = get_pipeline(rule)
+    if keyword_pipeline:
+        pipeline = (pipeline + keyword_pipeline) if pipeline else keyword_pipeline
     return OpensearchLuceneBackend(processing_pipeline=pipeline) \
            if pipeline else OpensearchLuceneBackend()
 # ─────────────────────────────────────────────────────────────────────────────
@@ -162,14 +172,14 @@ def load_rules(path: Path):
 
 
 # ── convert ───────────────────────────────────────────────────────────────────
-def convert_normal(sigma_rules: list) -> list[dict]:
+def convert_normal(sigma_rules: list, keyword_pipeline=None) -> list[dict]:
     converted = []
     for _, rule in sigma_rules:
         if rule.level is not None and rule.level < MIN_LEVEL:
             print(f"  [SKIP]  {rule.title} (level too low)")
             continue
         try:
-            queries = make_backend(rule).convert(SigmaCollection([rule]))
+            queries = make_backend(rule, keyword_pipeline).convert(SigmaCollection([rule]))
             if not queries:
                 print(f"  [WARN]  No query: {rule.title}")
                 continue
@@ -187,7 +197,7 @@ def convert_normal(sigma_rules: list) -> list[dict]:
     return converted
 
 
-def convert_correlation(sigma_rules: list, corr_rules: list, keyword_map: dict) -> list[dict]:
+def convert_correlation(sigma_rules: list, corr_rules: list, keyword_map: dict, keyword_pipeline=None) -> list[dict]:
     converted = []
     by_name   = {r.name: r for _, r in sigma_rules if hasattr(r, "name") and r.name}
 
@@ -196,15 +206,17 @@ def convert_correlation(sigma_rules: list, corr_rules: list, keyword_map: dict) 
             print(f"  [SKIP]  {corr.title} (level too low)")
             continue
         try:
-            ref       = corr.rules[0].reference if corr.rules else None
-            base_rule = by_name.get(str(ref)) if ref else None
-            if not base_rule:
-                print(f"  [WARN]  Base rule not found: '{ref}' — available: {list(by_name)}")
-                continue
+            base_rules = []
+            for rule_ref in corr.rules:
+                ref       = rule_ref.reference if rule_ref else None
+                base_rule = by_name.get(str(ref)) if ref else None
+                if base_rule:
+                    base_rules.append(base_rule)
+                else:
+                    print(f"  [WARN]  Base rule not found: '{ref}' — available: {list(by_name)}")
 
-            base_query = make_backend(base_rule).convert(SigmaCollection([base_rule]))
-            if not base_query:
-                print(f"  [WARN]  No base query for: {corr.title}")
+            if not base_rules:
+                print(f"  [WARN]  No base rules resolved for: {corr.title}")
                 continue
 
             group_by  = get_keyword_field(
@@ -212,28 +224,37 @@ def convert_correlation(sigma_rules: list, corr_rules: list, keyword_map: dict) 
             )
             timespan  = corr.timespan.spec if corr.timespan else "5m"
             threshold = corr.condition.count if corr.condition else 5
-            index     = get_index(base_rule)
 
-            converted.append({
-                "id":        str(corr.id),
-                "title":     corr.title,
-                "level":     corr.level.name if corr.level else "UNKNOWN",
-                "index":     index,
-                "threshold": threshold,
-                "timespan":  timespan,
-                "type":      "correlation",
-                "query": {
-                    "size": 0,
+            for base_rule in base_rules:
+                base_query = make_backend(base_rule, keyword_pipeline).convert(SigmaCollection([base_rule]))
+                if not base_query:
+                    print(f"  [WARN]  No base query for: {corr.title} / {base_rule.name}")
+                    continue
+
+                index = get_index(base_rule)
+                monitor_title = f"{corr.title} [{base_rule.name}]" if len(base_rules) > 1 else corr.title
+
+                converted.append({
+                    "id":        f"{corr.id}_{base_rule.name}" if len(base_rules) > 1 else str(corr.id),
+                    "title":     monitor_title,
+                    "level":     corr.level.name if corr.level else "UNKNOWN",
+                    "index":     index,
+                    "threshold": threshold,
+                    "timespan":  timespan,
+                    "type":      "correlation",
                     "query": {
-                        "bool": {
-                            "must":   [{"query_string": {"query": base_query[0]}}],
-                            "filter": [{"range": {"@timestamp": {"gte": f"now-{timespan}"}}}],
-                        }
+                        "size": 0,
+                        "query": {
+                            "bool": {
+                                "must":   [{"query_string": {"query": base_query[0]}}],
+                                "filter": [{"range": {"@timestamp": {"gte": f"now-{timespan}"}}}],
+                            }
+                        },
+                        "aggs": {"by_field": {"terms": {"field": group_by, "size": 100}}},
                     },
-                    "aggs": {"by_field": {"terms": {"field": group_by, "size": 100}}},
-                },
-            })
-            print(f"  [OK]    {corr.title} (>= {threshold} per {timespan} by {group_by}) → {index}")
+                })
+                print(f"  [OK]    {monitor_title} (>= {threshold} per {timespan} by {group_by}) → {index}")
+
         except Exception as e:
             print(f"  [FAIL]  {corr.title}: {e}")
 
@@ -243,7 +264,6 @@ def convert_correlation(sigma_rules: list, corr_rules: list, keyword_map: dict) 
 
 # ── deploy ────────────────────────────────────────────────────────────────────
 def get_all_monitors(session: requests.Session) -> dict:
-    """Fetch toàn bộ monitors 1 lần → dict {name: id}."""
     try:
         r = session.post(
             f"{OPENSEARCH}/_plugins/_alerting/monitors/_search",
@@ -258,14 +278,14 @@ def get_all_monitors(session: requests.Session) -> dict:
 
 
 def _parse_timespan_minutes(spec: str) -> int:
-    """Parse Sigma timespan (e.g. '5m', '1h', '30s') → minutes (min 1)."""
+    """Đã sửa: Đảm bảo nếu timespan là vài giây (ví dụ 30s) thì monitor vẫn được đặt lịch tối thiểu là 1 phút của OpenSearch"""
     import re
     m = re.match(r"(\d+)([smhd])", spec)
     if not m:
         return SCHEDULE_MIN
     val, unit = int(m.group(1)), m.group(2)
     if unit == "s":
-        return max(1, val // 60)
+        return 1  # OpenSearch định kỳ tối thiểu là 1 phút
     if unit == "m":
         return max(1, val)
     if unit == "h":
@@ -274,27 +294,63 @@ def _parse_timespan_minutes(spec: str) -> int:
         return val * 1440
     return SCHEDULE_MIN
 
-
 def build_monitor(rule: dict) -> dict:
+    thehive_action = {
+        "name": "Send to TheHive",
+        "destination_id": CHANNEL_ID,  
+        "message_template": {
+            "source": """{
+                "type": "SIEM_Alert",
+                "source": "OpenSearch-Sigma",
+                "sourceRef": "{{ctx.monitor.name}}-{{ctx.periodStart}}",
+                "title": \"""" + rule["title"] + """\",
+                "description": "Sigma Rule Detected on index: """ + rule["index"] + """.\\nMonitor ID: {{ctx.monitor.name}}\\nSeverity Level: """ + rule["level"] + """\\nTotal Hits: {{ctx.results.0.hits.total.value}}",
+                "severity": 3,
+                "tlp": 2,
+                "pap": 2,
+                "date": {{ctx.periodStart}}
+            }""",
+            "lang": "mustache"
+        }
+    }
+
     if rule["type"] == "correlation":
-        # Correlation: aggregation query + count trigger
-        # Tumbling window: schedule interval = timespan → không overlap
-        trigger = f"""
-            if (ctx.results == null || ctx.results.length == 0) return false;
-            def aggs = ctx.results[0].aggregations;
-            if (aggs == null || aggs.by_field == null) return false;
-            for (def b : aggs.by_field.buckets) {{
-                if (b.doc_count >= {rule['threshold']}) return true;
-            }}
-            return false;
-        """
-        dsl = rule["query"]
         schedule_min = _parse_timespan_minutes(rule.get("timespan", "5m"))
+        dsl = rule["query"]
+
+        return {
+            "name":          rule["id"],
+            "type":          "monitor",
+            "monitor_type":  "bucket_level_monitor",
+            "enabled":       True,
+            "schedule":      {"period": {"interval": schedule_min, "unit": "MINUTES"}},
+            "inputs": [{
+                "search": {
+                    "indices": [rule["index"]],
+                    "query":   dsl,
+                }
+            }],
+            "triggers": [{
+                "bucket_level_trigger": {
+                    "id":       "trigger-" + rule["id"],
+                    "name":     rule["title"],
+                    "severity": "1",
+                    "condition": {
+                        "buckets_path": {"_count": "_count"},
+                        "parent_bucket_path": "by_field",
+                        "script": {
+                            "source": f"params._count >= {rule['threshold']}",
+                            "lang":   "painless",
+                        },
+                    },
+                    "actions": [thehive_action], # ← Đã sửa: Gắn action gửi TheHive vào đây
+                }
+            }],
+        }
     else:
-        # Normal rule: thêm time filter = schedule interval
-        # tránh query lại event cũ mỗi lần monitor chạy
-        trigger = "ctx.results[0].hits.total.value > 0"
+        schedule_min = SCHEDULE_MIN
         dsl = {
+            "size": 0,
             "query": {
                 "bool": {
                     "must": [{"query_string": {"query": rule["query"]}}],
@@ -308,21 +364,29 @@ def build_monitor(rule: dict) -> dict:
                 }
             }
         }
-        schedule_min = SCHEDULE_MIN
 
-    return {
-        "name":    rule["id"],
-        "type":    "monitor",
-        "enabled": True,
-        "schedule": {"period": {"interval": schedule_min, "unit": "MINUTES"}},
-        "inputs":  [{"search": {"indices": [rule["index"]], "query": dsl}}],
-        "triggers": [{
-            "name":     rule["title"],
-            "severity": "1",
-            "condition": {"script": {"source": trigger, "lang": "painless"}},
-            "actions":  [],
-        }],
-    }
+        return {
+            "name":         rule["id"],
+            "type":         "monitor",
+            "monitor_type": "query_level_monitor",
+            "enabled":      True,
+            "schedule":     {"period": {"interval": schedule_min, "unit": "MINUTES"}},
+            "inputs": [{"search": {"indices": [rule["index"]], "query": dsl}}],
+            "triggers": [{
+                "query_level_trigger": {
+                    "id":        "trigger-" + rule["id"],
+                    "name":      rule["title"],
+                    "severity":  "1",
+                    "condition": {
+                        "script": {
+                            "source": "ctx.results[0].hits.total.value > 0",
+                            "lang":   "painless",
+                        }
+                    },
+                    "actions": [thehive_action], # ← Đã sửa: Gắn action gửi TheHive vào đây
+                }
+            }],
+        }
 
 
 def deploy_one(rule: dict, session: requests.Session, existing: dict) -> str:
@@ -367,12 +431,15 @@ def main():
     print("\n=== Building field map from OpenSearch ===")
     keyword_map = build_keyword_map(session)
     print(f"  Mapped {len(keyword_map)} fields")
+    keyword_pipeline = build_keyword_pipeline(keyword_map)
+    kw_count = sum(1 for v in keyword_map.values() if v.endswith(".keyword"))
+    print(f"  Keyword pipeline: {kw_count} text→keyword field mappings")
 
     print("\n=== Converting normal rules ===")
-    converted = convert_normal(sigma_rules)
+    converted = convert_normal(sigma_rules, keyword_pipeline)
 
     print("\n=== Converting correlation rules ===")
-    converted += convert_correlation(sigma_rules, corr_rules, keyword_map)
+    converted += convert_correlation(sigma_rules, corr_rules, keyword_map, keyword_pipeline)
 
     if not converted:
         print("Nothing to deploy.")

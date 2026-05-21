@@ -1,8 +1,4 @@
-# ======================== Winlogbeat specific options =========================
-
 winlogbeat.event_logs:
-
-  # --- Windows cơ bản ---
   - name: Application
     ignore_older: 72h
 
@@ -12,11 +8,9 @@ winlogbeat.event_logs:
   - name: Security
     ignore_older: 72h
 
-  # --- Sysmon ---
   - name: Microsoft-Windows-Sysmon/Operational
     ignore_older: 72h
 
-  # --- PowerShell logging ---
   - name: Windows PowerShell
     event_id: 400, 403, 600, 800
     ignore_older: 72h
@@ -25,33 +19,20 @@ winlogbeat.event_logs:
     event_id: 4103, 4104, 4105, 4106
     ignore_older: 72h
 
-  # --- Windows Defender ---
   - name: Microsoft-Windows-Windows Defender/Operational
     ignore_older: 72h
-
-# ====================== Elasticsearch template settings =======================
 
 setup.template.settings:
   index.number_of_shards: 1
 
-# ================================== Outputs ===================================
-
-# Tắt Elasticsearch output
-#output.elasticsearch:
-#  hosts: ["localhost:9200"]
-
-#  Gửi về Logstash
 output.logstash:
   hosts: ["192.168.56.1:5044"]
-
-# ================================= Processors =================================
+  bulk_max_size: 1024
+  worker: 2
 
 processors:
   - add_host_metadata:
       when.not.contains.tags: forwarded
-  - add_cloud_metadata: ~
-
-# ================================== Logging ===================================
 
 logging.level: info
 logging.to_files: true
