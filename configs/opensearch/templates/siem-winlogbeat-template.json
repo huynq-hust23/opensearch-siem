@@ -1,0 +1,283 @@
+{
+  "index_patterns": [
+    "siem-winlogbeat-*"
+  ],
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": "1",
+        "number_of_replicas": "2",
+        "refresh_interval": "30s"
+      }
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "winlog": {
+          "properties": {
+            "computer_name": {
+              "type": "keyword"
+            },
+            "event_id": {
+              "type": "long"
+            },
+            "channel": {
+              "type": "keyword"
+            },
+            "event_data": {
+              "properties": {
+                "SignatureStatus": {
+                  "type": "keyword"
+                },
+                "ParentImage": {
+                  "type": "keyword"
+                },
+                "OriginalFileName": {
+                  "type": "keyword"
+                },
+                "IntegrityLevel": {
+                  "type": "keyword"
+                },
+                "EventType": {
+                  "type": "keyword"
+                },
+                "ParentProcessId": {
+                  "type": "keyword"
+                },
+                "IpPort": {
+                  "type": "keyword"
+                },
+                "Image": {
+                  "type": "keyword"
+                },
+                "DestinationPort": {
+                  "type": "long"
+                },
+                "QueryStatus": {
+                  "type": "keyword"
+                },
+                "ProcessGuid": {
+                  "type": "keyword"
+                },
+                "ServiceType": {
+                  "type": "keyword"
+                },
+                "CallTrace": {
+                  "type": "keyword"
+                },
+                "ParentCommandLine": {
+                  "type": "text",
+                  "fields": {
+                    "keyword": {
+                      "ignore_above": 1024,
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "RuleName": {
+                  "type": "keyword"
+                },
+                "Status": {
+                  "type": "keyword"
+                },
+                "SamAccountName": {
+                  "type": "keyword"
+                },
+                "GrantedAccess": {
+                  "type": "keyword"
+                },
+                "Signed": {
+                  "type": "keyword"
+                },
+                "FailureCode": {
+                  "type": "keyword"
+                },
+                "NewProcessName": {
+                  "type": "keyword"
+                },
+                "SourceHostname": {
+                  "type": "keyword"
+                },
+                "AccessMask": {
+                  "type": "keyword"
+                },
+                "SourceIp": {
+                  "ignore_malformed": true,
+                  "type": "ip"
+                },
+                "Details": {
+                  "type": "keyword"
+                },
+                "ServiceName": {
+                  "type": "keyword"
+                },
+                "TaskName": {
+                  "type": "keyword"
+                },
+                "Hashes": {
+                  "type": "keyword"
+                },
+                "TargetUserName": {
+                  "type": "keyword"
+                },
+                "ParentProcessGuid": {
+                  "type": "keyword"
+                },
+                "SubjectUserSid": {
+                  "type": "keyword"
+                },
+                "TargetUserSid": {
+                  "type": "keyword"
+                },
+                "User": {
+                  "type": "keyword"
+                },
+                "SourceImage": {
+                  "type": "keyword"
+                },
+                "ScriptBlockText": {
+                  "type": "text"
+                },
+                "SourcePort": {
+                  "type": "long"
+                },
+                "TargetFilename": {
+                  "type": "keyword"
+                },
+                "ServiceFileName": {
+                  "type": "keyword"
+                },
+                "CurrentDirectory": {
+                  "type": "keyword"
+                },
+                "DestinationIp": {
+                  "ignore_malformed": true,
+                  "type": "ip"
+                },
+                "Initiated": {
+                  "type": "keyword"
+                },
+                "ElevatedToken": {
+                  "type": "keyword"
+                },
+                "ThreadId": {
+                  "type": "keyword"
+                },
+                "WorkstationName": {
+                  "type": "keyword"
+                },
+                "TargetImage": {
+                  "type": "keyword"
+                },
+                "SubjectDomainName": {
+                  "type": "keyword"
+                },
+                "Protocol": {
+                  "type": "keyword"
+                },
+                "LogonId": {
+                  "type": "keyword"
+                },
+                "TargetDomainName": {
+                  "type": "keyword"
+                },
+                "PrivilegeList": {
+                  "type": "keyword"
+                },
+                "UserName": {
+                  "type": "keyword"
+                },
+                "NewProcessId": {
+                  "type": "keyword"
+                },
+                "PipeName": {
+                  "type": "keyword"
+                },
+                "LogonType": {
+                  "type": "keyword"
+                },
+                "TokenElevationType": {
+                  "type": "keyword"
+                },
+                "SubjectLogonId": {
+                  "type": "keyword"
+                },
+                "DestinationHostname": {
+                  "type": "keyword"
+                },
+                "QueryResults": {
+                  "type": "keyword"
+                },
+                "TargetObject": {
+                  "type": "keyword"
+                },
+                "QueryName": {
+                  "type": "keyword"
+                },
+                "TargetLogonId": {
+                  "type": "keyword"
+                },
+                "CommandLine": {
+                  "type": "text",
+                  "fields": {
+                    "keyword": {
+                      "ignore_above": 1024,
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "SubjectUserName": {
+                  "type": "keyword"
+                },
+                "IpAddress": {
+                  "ignore_malformed": true,
+                  "type": "ip"
+                },
+                "ProcessId": {
+                  "type": "keyword"
+                },
+                "AuthenticationPackageName": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "provider_name": {
+              "type": "keyword"
+            },
+            "user": {
+              "properties": {
+                "name": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "host": {
+          "properties": {
+            "name": {
+              "type": "keyword"
+            }
+          }
+        },
+        "message": {
+          "type": "text"
+        },
+        "event": {
+          "properties": {
+            "code": {
+              "type": "long"
+            }
+          }
+        },
+        "timestamp": {
+          "type": "date"
+        }
+      }
+    }
+  },
+  "composed_of": [],
+  "priority": 100
+}

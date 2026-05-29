@@ -1,0 +1,30 @@
+title: PowerShell Execution (Atomic Red Team T1059.001)
+id: f564d552-03df-403d-82d1-f3b14d232dc8
+status: stable
+description: Detects the execution of PowerShell commands indicative of Atomic Red Team tests for T1059.001.
+author: HuyNN31
+date: 2026/05/27
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    Image|endswith:
+      - 'powershell.exe'
+      - 'pwsh.exe'
+  selection_cmd:
+    CommandLine|contains|all:
+      - 'Invoke'
+      - 'AtomicTest'
+      - 'T1059.001'
+  condition: selection_img and selection_cmd
+fields:
+  - Image
+  - CommandLine
+  - User
+falsepositives:
+  - Legitimate administrative testing.
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001

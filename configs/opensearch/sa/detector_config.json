@@ -1,0 +1,75 @@
+[
+  {
+    "_id": "m012bp4B8W8eggdDz8U0",
+    "detector": {
+      "name": "SIEM-Custom-Detector",
+      "detector_type": "windows",
+      "enabled": true,
+      "schedule": {
+        "period": {
+          "interval": 1,
+          "unit": "MINUTES"
+        }
+      },
+      "inputs": [
+        {
+          "detector_input": {
+            "description": "SIEM custom Sigma rules detector",
+            "indices": [
+              "siem-winlogbeat-*"
+            ],
+            "custom_rules": [
+              {
+                "id": "DUBIaJ4BJdgPlq9LwiBo"
+              },
+              {
+                "id": "V1hIaJ4BYUXfZM0HwmSm"
+              },
+              {
+                "id": "Ry5IaJ4BjWGE6A5Rwo-v"
+              },
+              {
+                "id": "DkBIaJ4BJdgPlq9LwiC8"
+              },
+              {
+                "id": "WFhIaJ4BYUXfZM0HwmS9"
+              }
+            ],
+            "pre_packaged_rules": []
+          }
+        }
+      ],
+      "triggers": [
+        {
+          "id": "trigger-main",
+          "name": "Threat-Detected",
+          "severity": "1",
+          "types": [],
+          "ids": [],
+          "sev_levels": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ],
+          "tags": [],
+          "actions": [
+            {
+              "id": "kk12bp4B8W8eggdDzcW4",
+              "name": "Send to TheHive",
+              "destination_id": "2C6-Z54BjWGE6A5RLoCZ",
+              "message_template": {
+                "source": "{\"type\":\"SIEM_Alert\",\"source\":\"OpenSearch-SA\",\"sourceRef\":\"SA-{{ctx.detector.name}}-{{ctx.periodStart}}\",\"title\":\"{{ctx.detector.name}} triggered\",\"description\":\"Severity: {{ctx.trigger.severity}}\",\"severity\":3,\"tlp\":2}",
+                "lang": "mustache"
+              },
+              "throttle_enabled": false
+            }
+          ],
+          "detection_types": [
+            "rules"
+          ]
+        }
+      ]
+    }
+  }
+]

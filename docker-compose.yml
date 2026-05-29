@@ -18,7 +18,7 @@ services:
 
   # ========= DATA 1 =========
   opensearch-data1:
-    image: opensearchproject/opensearch:2.11.0
+    image: opensearchproject/opensearch:2.13.0
     container_name: opensearch-data1
     restart: unless-stopped
     environment:
@@ -29,9 +29,9 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch-data1,opensearch-data2,opensearch-data3
       - network.host=0.0.0.0
       - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - OPENSEARCH_JAVA_OPTS=-Xms1536m -Xmx1536m
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-    mem_limit: 2g
+    mem_limit: 3g
     ulimits:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 65536, hard: 65536 }
@@ -43,7 +43,7 @@ services:
 
   # ========= DATA 2 =========
   opensearch-data2:
-    image: opensearchproject/opensearch:2.11.0
+    image: opensearchproject/opensearch:2.13.0
     container_name: opensearch-data2
     restart: unless-stopped
     environment:
@@ -54,9 +54,9 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch-data1,opensearch-data2,opensearch-data3
       - network.host=0.0.0.0
       - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - OPENSEARCH_JAVA_OPTS=-Xms1536m -Xmx1536m
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-    mem_limit: 2g
+    mem_limit: 3g
     ulimits:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 65536, hard: 65536 }
@@ -68,7 +68,7 @@ services:
 
   # ========= DATA 3 =========
   opensearch-data3:
-    image: opensearchproject/opensearch:2.11.0
+    image: opensearchproject/opensearch:2.13.0
     container_name: opensearch-data3
     restart: unless-stopped
     environment:
@@ -79,9 +79,9 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch-data1,opensearch-data2,opensearch-data3
       - network.host=0.0.0.0
       - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - OPENSEARCH_JAVA_OPTS=-Xms1536m -Xmx1536m
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-    mem_limit: 2g
+    mem_limit: 3g
     ulimits:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 65536, hard: 65536 }
@@ -93,7 +93,7 @@ services:
 
   # ========= DASHBOARD =========
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.11.0
+    image: opensearchproject/opensearch-dashboards:2.13.0
     container_name: opensearch-dashboards
     restart: unless-stopped
     ports:

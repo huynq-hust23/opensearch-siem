@@ -11,6 +11,6 @@ logsource:
     product: windows
 detection:
     selection:
-        TargetImage|endswith: '\lsass.exe'
+        TargetImage|endswith: 'lsass.exe'
         GrantedAccess|endswith: '0x1010'
     condition: selection

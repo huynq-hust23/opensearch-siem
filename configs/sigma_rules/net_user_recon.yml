@@ -10,8 +10,8 @@ logsource:
 detection:
   selection_img:
     Image|endswith:
-      - '\net.exe'
-      - '\net1.exe'
+      - 'net.exe'
+      - 'net1.exe'
   selection_cmd:
     CommandLine|contains: 'user'
   filter_system:

@@ -1,0 +1,19 @@
+[
+  {
+    "config_id": "2C6-Z54BjWGE6A5RLoCZ",
+    "config": {
+      "name": "TheHive-Webhook",
+      "description": "G\u1eedi alert t\u1eeb OpenSearch SA sang TheHive",
+      "config_type": "webhook",
+      "is_enabled": true,
+      "webhook": {
+        "url": "https://thehive.huynnphotography.id.vn/api/alert",
+        "header_params": {
+          "Authorization": "Bearer ${THEHIVE_API_KEY}",
+          "Content-Type": "application/json"
+        },
+        "method": "POST"
+      }
+    }
+  }
+]

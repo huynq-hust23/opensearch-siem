@@ -1,0 +1,179 @@
+[
+  {
+    "_id": "DUBIaJ4BJdgPlq9LwiBo",
+    "rule": {
+      "category": "windows",
+      "title": "Windows Failed Logon Event",
+      "log_source": "",
+      "description": "Single failed logon event (ECS - Winlogbeat)",
+      "references": [],
+      "tags": [
+        {
+          "value": "attack.credential_access"
+        },
+        {
+          "value": "attack.t1110"
+        }
+      ],
+      "level": "high",
+      "false_positives": [],
+      "author": "HuyNN31",
+      "status": "stable",
+      "last_update_time": "2026-05-27T07:14:19.000Z",
+      "queries": [
+        {
+          "value": "(winlog.channel:Security AND winlog.event_id:4625) AND (NOT winlog.event_data.SubjectUserName:*$) AND (NOT (winlog.event_data.TargetUserName:(ANONYMOUS\\ LOGON OR \\-)))"
+        }
+      ],
+      "query_field_names": [],
+      "aggregationQueries": [],
+      "rule": "title: Windows Failed Logon Event\nname: failed_logon\nid: f47ac10b-58cc-4372-a567-0e02b2c3d479\nstatus: stable\ndescription: Single failed logon event (ECS - Winlogbeat)\nauthor: HuyNN31\ndate: 2026/05/20\nlogsource:\n  product: windows\n  service: security\ndetection:\n  selection:\n    winlog.channel: Security\n    winlog.event_id: 4625\n  filter_machine:\n    winlog.event_data.SubjectUserName|endswith: '$'\n  filter_anonymous:\n    winlog.event_data.TargetUserName:\n      - 'ANONYMOUS LOGON'\n      - '-'\n  condition: selection and not filter_machine and not filter_anonymous\nlevel: high\n\ntags:\n  - attack.credential_access\n  - attack.t1110\n"
+    }
+  },
+  {
+    "_id": "V1hIaJ4BYUXfZM0HwmSm",
+    "rule": {
+      "category": "windows",
+      "title": "LSASS Access with rare GrantedAccess flag",
+      "log_source": "",
+      "description": "This rule will detect when a process tries to access LSASS memory with suspicious access flag 0x1010",
+      "references": [],
+      "tags": [
+        {
+          "value": "attack.credential_access"
+        },
+        {
+          "value": "attack.t1003.001"
+        }
+      ],
+      "level": "medium",
+      "false_positives": [],
+      "author": "HuyNN31",
+      "status": "experimental",
+      "last_update_time": "2026-05-27T07:14:19.000Z",
+      "queries": [
+        {
+          "value": "winlog.event_data.TargetImage:*lsass.exe AND winlog.event_data.GrantedAccess:*0x1010"
+        }
+      ],
+      "query_field_names": [],
+      "aggregationQueries": [],
+      "rule": "title: LSASS Access with rare GrantedAccess flag \nstatus: experimental\ndescription: This rule will detect when a process tries to access LSASS memory with suspicious access flag 0x1010\ndate: 2026/05/20\nauthor: HuyNN31\ntags:\n    - attack.credential_access\n    - attack.t1003.001\nlogsource:\n    category: process_access\n    product: windows\ndetection:\n    selection:\n        TargetImage|endswith: 'lsass.exe'\n        GrantedAccess|endswith: '0x1010'\n    condition: selection"
+    }
+  },
+  {
+    "_id": "Ry5IaJ4BjWGE6A5Rwo-v",
+    "rule": {
+      "category": "windows",
+      "title": "Windows Net User Reconnaissance",
+      "log_source": "",
+      "description": "Detects execution of net user command for local/domain account enumeration",
+      "references": [],
+      "tags": [
+        {
+          "value": "attack.discovery"
+        },
+        {
+          "value": "attack.t1087.001"
+        }
+      ],
+      "level": "high",
+      "false_positives": [
+        {
+          "value": "Legitimate admin activity"
+        },
+        {
+          "value": "IT helpdesk enumeration"
+        }
+      ],
+      "author": "HuyNN31",
+      "status": "stable",
+      "last_update_time": "2026-05-27T07:14:19.000Z",
+      "queries": [
+        {
+          "value": "(winlog.event_data.Image:(*net.exe OR *net1.exe)) AND winlog.event_data.CommandLine:*user* AND (NOT winlog.event_data.User:NT\\ AUTHORITY\\\\SYSTEM)"
+        }
+      ],
+      "query_field_names": [],
+      "aggregationQueries": [],
+      "rule": "title: Windows Net User Reconnaissance\nid: b2c3d4e5-1234-5678-abcd-ef0123456789\nstatus: stable\ndescription: Detects execution of net user command for local/domain account enumeration\nauthor: HuyNN31\ndate: 2026/05/20\nlogsource:\n  product: windows\n  category: process_creation\ndetection:\n  selection_img:\n    Image|endswith:\n      - 'net.exe'\n      - 'net1.exe'\n  selection_cmd:\n    CommandLine|contains: 'user'\n  filter_system:\n    User: 'NT AUTHORITY\\SYSTEM'\n  condition: selection_img and selection_cmd and not filter_system\nfields:\n  - Image\n  - CommandLine\n  - User\nfalsepositives:\n  - Legitimate admin activity\n  - IT helpdesk enumeration\nlevel: high\ntags:\n  - attack.discovery\n  - attack.t1087.001"
+    }
+  },
+  {
+    "_id": "DkBIaJ4BJdgPlq9LwiC8",
+    "rule": {
+      "category": "windows",
+      "title": "PowerShell Execution (Atomic Red Team T1059.001)",
+      "log_source": "",
+      "description": "Detects the execution of PowerShell commands indicative of Atomic Red Team tests for T1059.001.",
+      "references": [],
+      "tags": [
+        {
+          "value": "attack.execution"
+        },
+        {
+          "value": "attack.t1059.001"
+        }
+      ],
+      "level": "high",
+      "false_positives": [
+        {
+          "value": "Legitimate administrative testing."
+        }
+      ],
+      "author": "HuyNN31",
+      "status": "stable",
+      "last_update_time": "2026-05-27T07:14:19.000Z",
+      "queries": [
+        {
+          "value": "(winlog.event_data.Image:(*powershell.exe OR *pwsh.exe)) AND (winlog.event_data.CommandLine:*Invoke* AND winlog.event_data.CommandLine:*AtomicTest* AND winlog.event_data.CommandLine:*T1059.001*)"
+        }
+      ],
+      "query_field_names": [],
+      "aggregationQueries": [],
+      "rule": "title: PowerShell Execution (Atomic Red Team T1059.001)\nid: f564d552-03df-403d-82d1-f3b14d232dc8\nstatus: stable\ndescription: Detects the execution of PowerShell commands indicative of Atomic Red Team tests for T1059.001.\nauthor: HuyNN31\ndate: 2026/05/27\nlogsource:\n  product: windows\n  category: process_creation\ndetection:\n  selection_img:\n    Image|endswith:\n      - 'powershell.exe'\n      - 'pwsh.exe'\n  selection_cmd:\n    CommandLine|contains|all:\n      - 'Invoke'\n      - 'AtomicTest'\n      - 'T1059.001'\n  condition: selection_img and selection_cmd\nfields:\n  - Image\n  - CommandLine\n  - User\nfalsepositives:\n  - Legitimate administrative testing.\nlevel: high\ntags:\n  - attack.execution\n  - attack.t1059.001\n"
+    }
+  },
+  {
+    "_id": "WFhIaJ4BYUXfZM0HwmS9",
+    "rule": {
+      "category": "windows",
+      "title": "Rundll32 Internet Connection",
+      "log_source": "",
+      "description": "Detects a rundll32 that communicates with public IP addresses",
+      "references": [
+        {
+          "value": "https://www.hybrid-analysis.com/sample/759fb4c0091a78c5ee035715afe3084686a8493f39014aea72dae36869de9ff6?environmentId=100"
+        }
+      ],
+      "tags": [
+        {
+          "value": "attack.defense_evasion"
+        },
+        {
+          "value": "attack.t1218.011"
+        },
+        {
+          "value": "attack.execution"
+        }
+      ],
+      "level": "medium",
+      "false_positives": [
+        {
+          "value": "Communication to other corporate systems that use IP addresses from public address spaces"
+        }
+      ],
+      "author": "Florian Roth (Nextron Systems)",
+      "status": "test",
+      "last_update_time": "2026-05-27T07:14:19.000Z",
+      "queries": [
+        {
+          "value": "(winlog.event_data.Image:*rundll32.exe AND winlog.event_data.Initiated:true) AND (NOT (((winlog.event_data.DestinationIp:(10.* OR 192.168.* OR 172.16.* OR 172.17.* OR 172.18.* OR 172.19.* OR 172.20.* OR 172.21.* OR 172.22.* OR 172.23.* OR 172.24.* OR 172.25.* OR 172.26.* OR 172.27.* OR 172.28.* OR 172.29.* OR 172.30.* OR 172.31.* OR 127.* OR 20.* OR 51.103.* OR 51.104.* OR 51.105.*)) OR winlog.event_data.CommandLine:*PcaSvc.dll,PcaPatchSdbTask* OR winlog.event_data.SourceHostname:*.internal.cloudapp.net) OR (winlog.event_data.ParentImage:*svchost.exe AND winlog.event_data.DestinationPort:443)))"
+        }
+      ],
+      "query_field_names": [],
+      "aggregationQueries": [],
+      "rule": "title: Rundll32 Internet Connection\nid: cdc8da7d-c303-42f8-b08c-b4ab47230263\nstatus: test\ndescription: Detects a rundll32 that communicates with public IP addresses\nreferences:\n    - https://www.hybrid-analysis.com/sample/759fb4c0091a78c5ee035715afe3084686a8493f39014aea72dae36869de9ff6?environmentId=100\nauthor: Florian Roth (Nextron Systems)\ndate: 2017/11/04\nmodified: 2023/02/05\ntags:\n    - attack.defense_evasion\n    - attack.t1218.011\n    - attack.execution\nlogsource:\n    category: network_connection\n    product: windows\ndetection:\n    selection:\n        Image|endswith: 'rundll32.exe'\n        Initiated: 'true'\n    filter:\n        - DestinationIp|startswith:\n            - '10.'\n            - '192.168.'\n            - '172.16.'\n            - '172.17.'\n            - '172.18.'\n            - '172.19.'\n            - '172.20.'\n            - '172.21.'\n            - '172.22.'\n            - '172.23.'\n            - '172.24.'\n            - '172.25.'\n            - '172.26.'\n            - '172.27.'\n            - '172.28.'\n            - '172.29.'\n            - '172.30.'\n            - '172.31.'\n            - '127.'\n            - '20.' # Microsoft range, caused some FPs\n            - '51.103.' # Microsoft range, caused some FPs\n            - '51.104.' # Microsoft range, caused some FPs\n            - '51.105.' # Microsoft range, caused some FPs\n        - CommandLine|contains: 'PcaSvc.dll,PcaPatchSdbTask'\n        - SourceHostname|endswith: '.internal.cloudapp.net'\n    filter_update_processes:\n        ParentImage|endswith: 'svchost.exe'\n        DestinationPort: 443\n    condition: selection and not 1 of filter*\nfalsepositives:\n    - Communication to other corporate systems that use IP addresses from public address spaces\nlevel: medium"
+    }
+  }
+]
